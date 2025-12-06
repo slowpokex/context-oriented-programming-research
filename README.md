@@ -1,22 +1,37 @@
 # Context-Oriented Programming (COP) Research
 
-## 📋 Overview
+## Overview
 
 This repository contains comprehensive research on **Context-Oriented Programming (COP)** — an emerging programming paradigm where software logic is defined through context modules, prompt templates, and behavioral instructions instead of traditional code.
 
-## 🎯 Research Question
+## Research Question
 
 > Are we on the verge of a new programming paradigm where LLM applications are built by composing context modules rather than writing procedural code? If so, what would a "package manager for prompts" look like?
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
-├── RESEARCH-COP.md          # Main research document (start here)
-├── TOOL-COMPARISON.md       # Analysis of existing LLM tools
-├── SPECIFICATION.md         # Draft COP package format specification
-├── ARCHITECTURE.md          # System architecture diagrams
-└── examples/
-    └── customer-support-agent/    # Example COP package
+├── README.md                      # This file
+├── AGENTS.md                      # Instructions for AI agents
+├── LICENSE                        # Apache 2.0 license
+│
+├── docs/                          # Documentation
+│   ├── README.md                  # Documentation index
+│   ├── research/                  # Research findings
+│   │   ├── key-findings.md        # Distilled insights (start here)
+│   │   ├── main-research.md       # Comprehensive research report
+│   │   ├── deep-analysis.md       # Philosophical deep-dive
+│   │   ├── tool-comparison.md     # Existing tools analysis
+│   │   └── opinion.md             # Perspective on COP
+│   ├── specification/             # Technical specifications
+│   │   ├── package-format.md      # COP package format spec
+│   │   └── architecture.md        # System architecture diagrams
+│   └── build/                     # Build process documentation
+│       ├── concept.md             # What "build" means in COP
+│       └── internals.md           # Implementation details
+│
+└── examples/                      # Example COP packages
+    └── customer-support-agent/    # Complete example
         ├── cop.yaml               # Package manifest
         ├── prompts/               # Prompt templates
         ├── personas/              # Persona definitions
@@ -26,21 +41,31 @@ This repository contains comprehensive research on **Context-Oriented Programmin
         └── tests/                 # Evaluation test suites
 ```
 
-## 📖 Key Documents
+## Quick Start
+
+| Goal | Start Here |
+|------|------------|
+| Quick overview of COP | [Key Findings](./docs/research/key-findings.md) |
+| Comprehensive research | [Main Research](./docs/research/main-research.md) |
+| Package format spec | [Package Format](./docs/specification/package-format.md) |
+| Understanding "build" | [Build Concept](./docs/build/concept.md) |
+| See an example | [Customer Support Agent](./examples/customer-support-agent/) |
+
+## Key Documents
 
 | Document | Description |
 |----------|-------------|
-| [RESEARCH-COP.md](./RESEARCH-COP.md) | Comprehensive research findings, gap analysis, and recommendations |
-| [DEEP-ANALYSIS-COP.md](./DEEP-ANALYSIS-COP.md) | Deep philosophical and technical analysis of COP as a paradigm |
-| [BUILD-CONCEPT-COP.md](./BUILD-CONCEPT-COP.md) | In-depth exploration of what "build" means in COP |
-| [BUILD-INTERNALS.md](./BUILD-INTERNALS.md) | Technical deep-dive: build process implementation details, algorithms, data structures |
-| [OPINION-COP.md](./OPINION-COP.md) | Opinion and perspective on COP as a paradigm shift |
-| [RESEARCH-FINDINGS.md](./RESEARCH-FINDINGS.md) | Distilled key insights and findings |
-| [TOOL-COMPARISON.md](./TOOL-COMPARISON.md) | Comparison of LangChain, LlamaIndex, PromptFlow, and other tools |
-| [SPECIFICATION.md](./SPECIFICATION.md) | Draft specification for the COP package format |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture diagrams for COP ecosystem |
+| [docs/research/key-findings.md](./docs/research/key-findings.md) | Distilled key insights and findings |
+| [docs/research/main-research.md](./docs/research/main-research.md) | Comprehensive research findings and recommendations |
+| [docs/research/deep-analysis.md](./docs/research/deep-analysis.md) | Philosophical and technical deep-dive into COP |
+| [docs/build/concept.md](./docs/build/concept.md) | In-depth exploration of "build" in COP |
+| [docs/build/internals.md](./docs/build/internals.md) | Technical deep-dive: algorithms, data structures |
+| [docs/research/opinion.md](./docs/research/opinion.md) | Opinion on COP as a paradigm shift |
+| [docs/research/tool-comparison.md](./docs/research/tool-comparison.md) | Comparison of LangChain, LlamaIndex, PromptFlow, etc. |
+| [docs/specification/package-format.md](./docs/specification/package-format.md) | Draft COP package format specification |
+| [docs/specification/architecture.md](./docs/specification/architecture.md) | System architecture diagrams |
 
-## 🔑 Key Findings
+## Key Findings
 
 ### 1. COP is Emerging Organically
 
@@ -74,7 +99,7 @@ The research proposes a complete system including:
 | Ecosystem readiness | 6/10 |
 | **Overall** | **7/10** |
 
-## 💡 Proposed Architecture
+## Proposed Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -93,7 +118,7 @@ The research proposes a complete system including:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Next Steps
+## Next Steps
 
 If pursuing COP standardization:
 
@@ -102,7 +127,7 @@ If pursuing COP standardization:
 3. **Phase 3 (12-24 months)**: Enterprise features, advanced evaluation
 4. **Phase 4 (24+ months)**: Industry standardization, working groups
 
-## 📊 Example Package
+## Example Package
 
 See [`examples/customer-support-agent/`](./examples/customer-support-agent/) for a complete example of what a COP package looks like, including:
 
@@ -112,7 +137,7 @@ See [`examples/customer-support-agent/`](./examples/customer-support-agent/) for
 - Tool definitions
 - Behavioral evaluation tests
 
-## 🤝 Conclusion
+## Conclusion
 
 **Context-Oriented Programming represents a genuine paradigm shift.** The opportunity for a standardized prompt package manager is significant and timely. The window for establishing foundational standards is approximately 18-24 months before the ecosystem crystallizes around incumbent (potentially proprietary) solutions.
 

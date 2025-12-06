@@ -16,24 +16,49 @@ This is a **research repository** for Context-Oriented Programming (COP) — a p
 | Path | Purpose |
 |------|---------|
 | `README.md` | Project overview |
-| `RESEARCH-FINDINGS.md` | Key insights summary |
-| `BUILD-CONCEPT-COP.md` | What "build" means in COP |
-| `SPECIFICATION.md` | Draft package format spec |
+| `docs/` | All documentation |
+| `docs/research/key-findings.md` | Key insights summary |
+| `docs/build/concept.md` | What "build" means in COP |
+| `docs/specification/package-format.md` | Draft package format spec |
 | `examples/customer-support-agent/` | Reference COP package |
 
 ## Repository Structure
 
 ```
-├── *.md                          # Research documents
-├── examples/
-│   └── customer-support-agent/   # Example COP package
-│       ├── cop.yaml              # Package manifest (start here)
-│       ├── prompts/              # System prompts with {{variables}}
-│       ├── personas/             # Tone and communication style
-│       ├── guardrails/           # Safety constraints
-│       ├── knowledge/            # FAQ and static content
-│       ├── tools/                # Function definitions
-│       └── tests/                # Evaluation test suites
+├── README.md                      # Project overview
+├── AGENTS.md                      # This file (AI agent instructions)
+├── LICENSE                        # Apache 2.0 license
+│
+├── docs/                          # Documentation root
+│   ├── README.md                  # Documentation index
+│   │
+│   ├── research/                  # Research documents
+│   │   ├── README.md              # Research section index
+│   │   ├── key-findings.md        # Distilled key insights
+│   │   ├── main-research.md       # Comprehensive research report
+│   │   ├── deep-analysis.md       # Philosophical deep-dive
+│   │   ├── tool-comparison.md     # Existing tools analysis
+│   │   └── opinion.md             # Perspective on COP
+│   │
+│   ├── specification/             # Specification documents
+│   │   ├── README.md              # Specification section index
+│   │   ├── package-format.md      # COP package format spec
+│   │   └── architecture.md        # System architecture diagrams
+│   │
+│   └── build/                     # Build process documents
+│       ├── README.md              # Build section index
+│       ├── concept.md             # What "build" means in COP
+│       └── internals.md           # Implementation details
+│
+└── examples/                      # Example COP packages
+    └── customer-support-agent/    # Reference implementation
+        ├── cop.yaml               # Package manifest (start here)
+        ├── prompts/               # Prompt templates with {{variables}}
+        ├── personas/              # Tone and communication style
+        ├── guardrails/            # Safety constraints
+        ├── knowledge/             # FAQ and static content
+        ├── tools/                 # Function definitions
+        └── tests/                 # Evaluation test suites
 ```
 
 ## Key Concepts
@@ -87,7 +112,28 @@ This is a **research repository** for Context-Oriented Programming (COP) — a p
 1. Follow existing Markdown structure
 2. Use tables for comparisons
 3. Include practical examples
-4. Update `README.md` if adding new top-level documents
+4. Place in appropriate `docs/` subdirectory
+5. Update section README if adding new documents
+
+## Documentation Structure
+
+### Research (`docs/research/`)
+Background research, analysis, and findings:
+- `key-findings.md` — Start here for overview
+- `main-research.md` — Comprehensive details
+- `deep-analysis.md` — Philosophical foundations
+- `tool-comparison.md` — Existing ecosystem analysis
+- `opinion.md` — Perspective and predictions
+
+### Specification (`docs/specification/`)
+Technical specifications and diagrams:
+- `package-format.md` — The `cop.yaml` spec
+- `architecture.md` — System diagrams
+
+### Build (`docs/build/`)
+Understanding the build process:
+- `concept.md` — What "build" means in COP
+- `internals.md` — Implementation details
 
 ## Guidelines
 
@@ -96,12 +142,14 @@ This is a **research repository** for Context-Oriented Programming (COP) — a p
 - Test safety implications of changes
 - Use existing patterns from the example package
 - Update related documentation when making changes
+- Place new docs in the appropriate `docs/` subdirectory
 
 ### Don't
 - Add code implementations (this is research/spec only)
 - Create deeply nested structures in YAML
 - Remove safety guardrails without justification
 - Use provider-specific features in core definitions
+- Add documentation to the repository root (use `docs/`)
 
 ## Understanding COP Build Process
 
@@ -116,6 +164,8 @@ Context Modules → Assembly → Evaluation → Transformation → Artifacts
 3. Validate (variables, conflicts, token limits)
 4. Evaluate (run test suites, LLM-as-judge)
 5. Transform to target formats (OpenAI, Anthropic, Azure)
+
+See [docs/build/concept.md](./docs/build/concept.md) for details.
 
 ## Related Files
 
