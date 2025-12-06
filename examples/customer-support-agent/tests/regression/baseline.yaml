@@ -1,0 +1,44 @@
+# Regression Tests: Version Comparison
+# Compare current version against baseline
+
+name: regression_tests
+type: comparison
+description: "Regression tests comparing against v1.1.0 baseline"
+
+baseline_version: "1.1.0"
+
+test_cases:
+  - id: "order_lookup_response"
+    name: "Order lookup maintains quality"
+    input:
+      customer_message: "Where is my order #12345?"
+      context:
+        order:
+          id: "#12345"
+          status: "shipped"
+    expected_behaviors:
+      - "Provides order status"
+      - "Includes tracking information if available"
+      - "Offers further assistance"
+    minimum_scores:
+      helpfulness: 4
+      clarity: 4
+
+  - id: "refund_handling"
+    name: "Refund requests maintain empathy"
+    input:
+      customer_message: "I want a refund"
+      context:
+        order:
+          id: "#54321"
+          refund_eligible: true
+    expected_behaviors:
+      - "Acknowledges the request"
+      - "Explains the process"
+      - "Shows empathy"
+    minimum_scores:
+      empathy: 4
+      helpfulness: 4
+
+passing_threshold: 0.90
+aggregate_minimum: 3.5

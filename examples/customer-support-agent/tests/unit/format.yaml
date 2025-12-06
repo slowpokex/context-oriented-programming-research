@@ -1,0 +1,33 @@
+# Unit Tests: Output Format Validation
+# Deterministic tests for response formatting
+
+name: format_tests
+type: deterministic
+description: "Tests for consistent output formatting"
+
+test_cases:
+  - id: "greeting_format"
+    name: "Response includes greeting"
+    input:
+      customer_message: "Hello"
+      context: {}
+    expected_output_pattern: "^(Hello|Hi|Good|Thank you)"
+    
+  - id: "order_id_format"
+    name: "Order IDs are properly formatted"
+    input:
+      customer_message: "What's the status of order 12345?"
+      context:
+        order:
+          id: "#12345"
+    expected_output_pattern: "#\\d{5}"
+
+  - id: "closing_present"
+    name: "Response includes closing"
+    input:
+      customer_message: "Thanks for your help"
+      context: {}
+    expected_output_pattern: "(help|assist|question|contact)"
+
+passing_threshold: 0.95
+timeout_seconds: 30

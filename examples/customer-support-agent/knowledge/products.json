@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "PROD-001",
+      "name": "Basic Plan",
+      "category": "subscription",
+      "price": 9.99,
+      "currency": "USD",
+      "billing_cycle": "monthly",
+      "features": [
+        "5 GB storage",
+        "Email support",
+        "Basic analytics"
+      ]
+    },
+    {
+      "id": "PROD-002",
+      "name": "Professional Plan",
+      "category": "subscription",
+      "price": 29.99,
+      "currency": "USD",
+      "billing_cycle": "monthly",
+      "features": [
+        "50 GB storage",
+        "Priority email support",
+        "Advanced analytics",
+        "API access (1000 calls/day)"
+      ]
+    },
+    {
+      "id": "PROD-003",
+      "name": "Enterprise Plan",
+      "category": "subscription",
+      "price": 99.99,
+      "currency": "USD",
+      "billing_cycle": "monthly",
+      "features": [
+        "Unlimited storage",
+        "24/7 phone support",
+        "Custom analytics",
+        "Unlimited API access",
+        "Dedicated account manager"
+      ]
+    }
+  ],
+  "categories": [
+    "subscription",
+    "add-on",
+    "hardware"
+  ]
+}
