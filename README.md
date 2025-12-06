@@ -61,6 +61,7 @@ This repository contains comprehensive research on **Context-Oriented Programmin
 | [docs/build/concept.md](./docs/build/concept.md) | In-depth exploration of "build" in COP |
 | [docs/build/internals.md](./docs/build/internals.md) | Technical deep-dive: algorithms, data structures |
 | [docs/research/opinion.md](./docs/research/opinion.md) | Opinion on COP as a paradigm shift |
+| [docs/research/critical-feedback.md](./docs/research/critical-feedback.md) | Balanced critique and concerns about COP |
 | [docs/research/tool-comparison.md](./docs/research/tool-comparison.md) | Comparison of LangChain, LlamaIndex, PromptFlow, etc. |
 | [docs/specification/package-format.md](./docs/specification/package-format.md) | Draft COP package format specification |
 | [docs/specification/architecture.md](./docs/specification/architecture.md) | System architecture diagrams |

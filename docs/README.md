@@ -21,6 +21,7 @@ Welcome to the Context-Oriented Programming (COP) research documentation. This d
 | [deep-analysis.md](./research/deep-analysis.md) | Philosophical and technical deep-dive into COP |
 | [tool-comparison.md](./research/tool-comparison.md) | Analysis of existing LLM tools (LangChain, PromptFlow, etc.) |
 | [opinion.md](./research/opinion.md) | Perspective on COP as a paradigm shift |
+| [critical-feedback.md](./research/critical-feedback.md) | Balanced critique and concerns about COP |
 
 ### Specification (`docs/specification/`)
 
@@ -52,6 +53,7 @@ Welcome to the Context-Oriented Programming (COP) research documentation. This d
 7. **[Build Internals](./build/internals.md)** — Implementation details
 8. **[Architecture](./specification/architecture.md)** — System diagrams
 9. **[Opinion](./research/opinion.md)** — Perspective and predictions
+10. **[Critical Feedback](./research/critical-feedback.md)** — Balanced critique and concerns
 
 ## Related Resources
 
