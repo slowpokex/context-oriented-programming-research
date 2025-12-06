@@ -8,7 +8,7 @@ Welcome to the Context-Oriented Programming (COP) research documentation. This d
 |---------|-------------|------------|
 | [Research](./research/) | Core research findings, analysis, and opinions | [Key Findings](./research/key-findings.md) |
 | [Specification](./specification/) | Package format spec and architecture diagrams | [Package Format](./specification/package-format.md) |
-| [Build](./build/) | Deep-dive into the "build" concept in COP | [Build Concept](./build/concept.md) |
+| [Build](./build/) | Deep-dive into build artifacts and compilation in COP | [Build Artifacts](./build/artifacts.md) |
 
 ## Document Index
 
@@ -33,6 +33,9 @@ Welcome to the Context-Oriented Programming (COP) research documentation. This d
 
 | Document | Description |
 |----------|-------------|
+| [README.md](./build/README.md) | Build section overview and quick reference |
+| [artifacts.md](./build/artifacts.md) | Comprehensive analysis of COP build artifacts — **canonical reference** |
+| [compilation.md](./build/compilation.md) | What "compilation" means in COP — stages, processes, transformations |
 | [concept.md](./build/concept.md) | What "build" means in COP — context assembly, evaluation, transformation |
 | [internals.md](./build/internals.md) | Technical implementation details, algorithms, and data structures |
 
@@ -42,14 +45,14 @@ Welcome to the Context-Oriented Programming (COP) research documentation. This d
 
 1. **[Key Findings](./research/key-findings.md)** — Quick summary of what COP is and why it matters
 2. **[Main Research](./research/main-research.md)** — Comprehensive research findings
-3. **[Build Concept](./build/concept.md)** — Understanding what "build" means in COP
+3. **[Build Artifacts](./build/artifacts.md)** — Understanding what build artifacts are in COP
 4. **[Package Format](./specification/package-format.md)** — The proposed specification
 5. **[Tool Comparison](./research/tool-comparison.md)** — How existing tools relate to COP
 
 **For deep understanding**, add:
 
 6. **[Deep Analysis](./research/deep-analysis.md)** — Philosophical foundations
-7. **[Build Internals](./build/internals.md)** — Implementation details
+7. **[Compilation](./build/compilation.md)** — What "compilation" means in COP
 8. **[Architecture](./specification/architecture.md)** — System diagrams
 9. **[Opinion](./research/opinion.md)** — Perspective and predictions
 

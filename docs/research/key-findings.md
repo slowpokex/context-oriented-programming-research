@@ -110,10 +110,11 @@ The build process in COP is not just a technical step—it's a **curation and va
 - New metrics (behavioral quality, safety scores, token efficiency)
 
 ## References
-- `RESEARCH-COP.md`: Primary narrative, viability assessment, roadmap.
-- `SPECIFICATION.md`: Draft manifest schema and CLI/registry definitions.
-- `ARCHITECTURE.md`: System, build, evaluation, and runtime diagrams.
-- `TOOL-COMPARISON.md`: Detailed analysis of existing LLM tooling versus COP requirements.
-- `DEEP-ANALYSIS-COP.md`: Comprehensive philosophical and technical deep-dive into COP.
-- `BUILD-CONCEPT-COP.md`: In-depth exploration of the "build" concept in COP.
-- `examples/customer-support-agent`: Concrete `.cop` package showcasing manifests, prompts, personas, guardrails, knowledge, tools, and tests.
+- `main-research.md`: Primary narrative, viability assessment, roadmap.
+- `../specification/package-format.md`: Draft manifest schema and CLI/registry definitions.
+- `../specification/architecture.md`: System, build, evaluation, and runtime diagrams.
+- `tool-comparison.md`: Detailed analysis of existing LLM tooling versus COP requirements.
+- `deep-analysis.md`: Comprehensive philosophical and technical deep-dive into COP.
+- `../build/artifacts.md`: Comprehensive analysis of COP build artifacts and recommendations.
+- `../build/compilation.md`: What "compilation" means in the COP paradigm.
+- `../../examples/customer-support-agent`: Concrete `.cop` package showcasing manifests, prompts, personas, guardrails, knowledge, tools, and tests.
