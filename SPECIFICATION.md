@@ -338,11 +338,11 @@ packages:
     eval_fingerprints:
       "gpt-4-0125-preview":
         quality_score: 0.92
-        eval_date: "2024-01-15"
+        eval_date: "2025-01-15"
         eval_hash: "sha256:def456..."
       "claude-3-opus-20240229":
         quality_score: 0.89
-        eval_date: "2024-02-01"
+        eval_date: "2025-02-01"
         eval_hash: "sha256:ghi789..."
 
   "sentiment-core@1.5.2":
@@ -604,8 +604,8 @@ POST   /v1/auth/token                  # Generate API token
         "integrity": "sha512-..."
       },
       "eval_results": {
-        "gpt-4": { "score": 0.94, "date": "2024-01-15" },
-        "claude-3": { "score": 0.91, "date": "2024-01-20" }
+        "gpt-4": { "score": 0.94, "date": "2025-01-15" },
+        "claude-3": { "score": 0.91, "date": "2025-01-20" }
       }
     }
   },
@@ -641,5 +641,5 @@ The following names are reserved and cannot be used:
 ---
 
 *Specification Status: DRAFT*
-*Last Updated: December 2024*
+*Last Updated: December 2025*
 *Feedback: https://github.com/cop-lang/spec/issues*
