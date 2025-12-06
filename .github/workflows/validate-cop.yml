@@ -1,0 +1,76 @@
+name: Validate COP Configurations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'examples/**'
+      - 'schemas/**'
+      - 'validate_cop.py'
+      - '.github/workflows/validate-cop.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'examples/**'
+      - 'schemas/**'
+      - 'validate_cop.py'
+      - '.github/workflows/validate-cop.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate COP Examples
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate all COP packages
+        run: |
+          python validate_cop.py --all --no-color
+
+      - name: Validate individual schemas
+        run: |
+          echo "=== Validating Persona Files ==="
+          for f in examples/*/personas/*.yaml; do
+            echo "Checking $f..."
+            python validate_cop.py --file "$f" --schema persona --no-color || exit 1
+          done
+          
+          echo ""
+          echo "=== Validating Guardrail Files ==="
+          for f in examples/*/guardrails/*.yaml; do
+            echo "Checking $f..."
+            python validate_cop.py --file "$f" --schema guardrail --no-color || exit 1
+          done
+          
+          echo ""
+          echo "=== Validating Tool Files ==="
+          for f in examples/*/tools/*.yaml; do
+            echo "Checking $f..."
+            python validate_cop.py --file "$f" --schema tool --no-color || exit 1
+          done
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "COP schema validation completed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Packages Validated:" >> $GITHUB_STEP_SUMMARY
+          for d in examples/*/; do
+            echo "- \`$(basename $d)\`" >> $GITHUB_STEP_SUMMARY
+          done
