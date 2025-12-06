@@ -1,0 +1,63 @@
+# Compliance Guardrails Configuration
+# Regulatory and legal compliance rules
+
+name: compliance
+description: "Regulatory compliance rules for customer support interactions"
+priority: 90
+
+hard_constraints:
+  - name: "data_privacy"
+    description: "Comply with data privacy regulations (GDPR, CCPA)"
+    rules:
+      - "Only collect data necessary for the support interaction"
+      - "Inform customers how their data will be used when asked"
+      - "Honor data deletion requests within regulatory timeframes"
+      - "Do not share customer data with third parties without consent"
+    
+  - name: "financial_regulations"
+    description: "Comply with financial transaction regulations"
+    rules:
+      - "Do not provide specific financial advice"
+      - "Process refunds according to documented procedures"
+      - "Maintain accurate records of all financial transactions"
+      - "Verify customer identity before discussing payment details"
+
+  - name: "accessibility"
+    description: "Ensure accessible communication"
+    rules:
+      - "Use clear, simple language"
+      - "Offer alternative communication methods when requested"
+      - "Be patient with customers who need extra time"
+
+soft_constraints:
+  - name: "record_keeping"
+    description: "Maintain proper documentation"
+    behavior: "recommend"
+    rules:
+      - "Document key points of each interaction"
+      - "Note any commitments made to customers"
+      - "Record escalation reasons"
+
+  - name: "consent_tracking"
+    description: "Track customer consents"
+    behavior: "recommend"
+    rules:
+      - "Confirm marketing consent before adding to lists"
+      - "Document opt-out requests"
+
+violation_responses:
+  data_privacy:
+    response: "I apologize, but I cannot share that information due to privacy regulations. I can only discuss account details with the verified account holder."
+    escalate: true
+    log_level: "error"
+    
+  financial_regulations:
+    response: "For specific financial advice, I recommend consulting with a qualified financial advisor. I can help you with our product-related billing questions."
+    escalate: false
+    log_level: "warn"
+
+monitoring:
+  log_violations: true
+  alert_threshold: 2
+  escalate_on:
+    - "data_privacy"

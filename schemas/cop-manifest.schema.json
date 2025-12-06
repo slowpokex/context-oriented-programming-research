@@ -1,0 +1,563 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cop.dev/schema/cop-manifest-v1.json",
+  "title": "COP Package Manifest",
+  "description": "Schema for Context-Oriented Programming package manifest (cop.yaml)",
+  "type": "object",
+  "required": ["meta", "context"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "$ref": "#/definitions/Meta"
+    },
+    "compatibility": {
+      "$ref": "#/definitions/Compatibility"
+    },
+    "context": {
+      "$ref": "#/definitions/Context"
+    },
+    "dependencies": {
+      "$ref": "#/definitions/Dependencies"
+    },
+    "dev_dependencies": {
+      "$ref": "#/definitions/Dependencies"
+    },
+    "peer_dependencies": {
+      "$ref": "#/definitions/Dependencies"
+    },
+    "optional_dependencies": {
+      "$ref": "#/definitions/OptionalDependencies"
+    },
+    "build": {
+      "$ref": "#/definitions/Build"
+    },
+    "evaluation": {
+      "$ref": "#/definitions/Evaluation"
+    },
+    "runtime": {
+      "$ref": "#/definitions/Runtime"
+    },
+    "observability": {
+      "$ref": "#/definitions/Observability"
+    }
+  },
+  "definitions": {
+    "Meta": {
+      "type": "object",
+      "description": "Package metadata",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Package name (lowercase, hyphens allowed)",
+          "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$",
+          "minLength": 2,
+          "maxLength": 64
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version (MAJOR.MINOR.PATCH)",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.]+)?$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief description of the package",
+          "maxLength": 256
+        },
+        "author": {
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/definitions/Author" }
+          ],
+          "description": "Package author"
+        },
+        "license": {
+          "type": "string",
+          "description": "SPDX license identifier"
+        },
+        "repository": {
+          "type": "string",
+          "description": "Git repository URL",
+          "format": "uri"
+        },
+        "homepage": {
+          "type": "string",
+          "description": "Project homepage URL",
+          "format": "uri"
+        },
+        "keywords": {
+          "type": "array",
+          "description": "Search keywords",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          }
+        }
+      }
+    },
+    "Author": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "url": { "type": "string", "format": "uri" }
+      },
+      "required": ["name"]
+    },
+    "Compatibility": {
+      "type": "object",
+      "description": "LLM compatibility configuration",
+      "additionalProperties": false,
+      "properties": {
+        "models": {
+          "type": "array",
+          "description": "Supported LLM models",
+          "items": {
+            "$ref": "#/definitions/ModelConfig"
+          }
+        },
+        "features_required": {
+          "type": "array",
+          "description": "Required LLM features",
+          "items": {
+            "type": "string",
+            "enum": ["function_calling", "json_mode", "vision", "system_messages", "streaming", "long_context"]
+          }
+        },
+        "context_window": {
+          "type": "object",
+          "properties": {
+            "minimum": {
+              "type": "integer",
+              "description": "Minimum required context window size in tokens",
+              "minimum": 1
+            },
+            "recommended": {
+              "type": "integer",
+              "description": "Recommended context window size in tokens",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "ModelConfig": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Model family name (e.g., gpt-4, claude-3)"
+        },
+        "min_version": {
+          "type": "string",
+          "description": "Minimum supported version"
+        },
+        "tested_versions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "eval_scores": {
+          "type": "object",
+          "description": "Evaluation scores for this model",
+          "properties": {
+            "quality": { "type": "number", "minimum": 0, "maximum": 1 },
+            "safety": { "type": "number", "minimum": 0, "maximum": 1 },
+            "latency_p95_ms": { "type": "number", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "Context": {
+      "type": "object",
+      "description": "Core context definition",
+      "additionalProperties": false,
+      "properties": {
+        "system": {
+          "$ref": "#/definitions/SystemPrompt"
+        },
+        "personas": {
+          "$ref": "#/definitions/Personas"
+        },
+        "knowledge": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/KnowledgeItem" }
+        },
+        "guardrails": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/GuardrailRef" }
+        },
+        "tools": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ToolRef" }
+        }
+      }
+    },
+    "SystemPrompt": {
+      "type": "object",
+      "required": ["source"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Path to the system prompt file"
+        },
+        "variables": {
+          "type": "object",
+          "description": "Template variables",
+          "additionalProperties": { "$ref": "#/definitions/Variable" }
+        }
+      }
+    },
+    "Variable": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "boolean", "array", "object"]
+        },
+        "required": { "type": "boolean", "default": false },
+        "default": {},
+        "description": { "type": "string" },
+        "format": {
+          "type": "string",
+          "enum": ["email", "url", "date", "date-time", "uri"]
+        },
+        "enum": {
+          "type": "array"
+        },
+        "pattern": { "type": "string" },
+        "minLength": { "type": "integer", "minimum": 0 },
+        "maxLength": { "type": "integer", "minimum": 0 },
+        "minimum": { "type": "number" },
+        "maximum": { "type": "number" }
+      }
+    },
+    "Personas": {
+      "type": "object",
+      "properties": {
+        "default": {
+          "type": "string",
+          "description": "Default persona name"
+        },
+        "available": {
+          "type": "object",
+          "description": "Available personas",
+          "additionalProperties": {
+            "$ref": "#/definitions/PersonaRef"
+          }
+        }
+      }
+    },
+    "PersonaRef": {
+      "type": "object",
+      "required": ["source"],
+      "properties": {
+        "source": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "KnowledgeItem": {
+      "type": "object",
+      "required": ["name", "source", "type"],
+      "properties": {
+        "name": { "type": "string" },
+        "source": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["static", "structured", "dynamic"]
+        },
+        "schema": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "GuardrailRef": {
+      "type": "object",
+      "required": ["name", "source", "priority"],
+      "properties": {
+        "name": { "type": "string" },
+        "source": { "type": "string" },
+        "priority": {
+          "type": "integer",
+          "description": "Execution priority (0-100, higher = first)",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "description": { "type": "string" }
+      }
+    },
+    "ToolRef": {
+      "type": "object",
+      "required": ["name", "source"],
+      "properties": {
+        "name": { "type": "string" },
+        "source": { "type": "string" },
+        "description": { "type": "string" },
+        "requires_approval": { "type": "boolean", "default": false },
+        "rate_limit": { "type": "integer", "minimum": 1 },
+        "max_amount": { "type": "string" }
+      }
+    },
+    "Dependencies": {
+      "type": "object",
+      "description": "Package dependencies with version constraints",
+      "additionalProperties": {
+        "type": "string",
+        "description": "Version constraint (^1.0.0, ~1.0.0, >=1.0.0, etc.)"
+      }
+    },
+    "OptionalDependencies": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["version"],
+        "properties": {
+          "version": { "type": "string" },
+          "condition": { "type": "string" }
+        }
+      }
+    },
+    "Build": {
+      "type": "object",
+      "description": "Build configuration",
+      "properties": {
+        "targets": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/BuildTarget" }
+        },
+        "preprocessing": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": { "type": ["boolean", "object"] }
+          }
+        },
+        "postprocessing": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": { "type": ["boolean", "object"] }
+          }
+        }
+      }
+    },
+    "BuildTarget": {
+      "type": "object",
+      "required": ["format"],
+      "properties": {
+        "format": { "type": "string" },
+        "optimize": { "type": "boolean" },
+        "include_knowledge": { "type": "boolean" },
+        "function_calling": { "type": "boolean" },
+        "xml_tags": { "type": "boolean" },
+        "resource_group": { "type": "string" },
+        "base_image": { "type": "string" },
+        "expose_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "health_check": { "type": "string" },
+        "chain_type": { "type": "string" }
+      }
+    },
+    "Evaluation": {
+      "type": "object",
+      "description": "Evaluation configuration",
+      "properties": {
+        "framework": { "type": "string" },
+        "test_suites": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/TestSuite" }
+        },
+        "benchmarks": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Benchmark" }
+        },
+        "regression": {
+          "type": "object",
+          "properties": {
+            "baseline": { "type": "string" },
+            "tolerance": { "type": "number", "minimum": 0, "maximum": 1 },
+            "alert_on_degradation": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "TestSuite": {
+      "type": "object",
+      "required": ["name", "path", "type"],
+      "properties": {
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["deterministic", "llm-judged", "adversarial", "comparison"]
+        },
+        "judge_model": { "type": "string" },
+        "baseline_version": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "Benchmark": {
+      "type": "object",
+      "required": ["name", "metric", "threshold"],
+      "properties": {
+        "name": { "type": "string" },
+        "metric": { "type": "string" },
+        "threshold": { "type": "number" },
+        "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "Runtime": {
+      "type": "object",
+      "description": "Runtime configuration",
+      "properties": {
+        "model_config": {
+          "$ref": "#/definitions/ModelParameters"
+        },
+        "retry_policy": {
+          "$ref": "#/definitions/RetryPolicy"
+        },
+        "fallback": {
+          "$ref": "#/definitions/Fallback"
+        },
+        "rate_limits": {
+          "$ref": "#/definitions/RateLimits"
+        },
+        "cache": {
+          "$ref": "#/definitions/Cache"
+        }
+      }
+    },
+    "ModelParameters": {
+      "type": "object",
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "top_p": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "frequency_penalty": {
+          "type": "number",
+          "minimum": -2,
+          "maximum": 2
+        },
+        "presence_penalty": {
+          "type": "number",
+          "minimum": -2,
+          "maximum": 2
+        },
+        "stop_sequences": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "RetryPolicy": {
+      "type": "object",
+      "properties": {
+        "max_retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "backoff": {
+          "type": "string",
+          "enum": ["linear", "exponential", "constant"]
+        },
+        "initial_delay_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_delay_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "Fallback": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "trigger": { "type": "string" },
+        "model": { "type": "string" },
+        "notify": { "type": "boolean" }
+      }
+    },
+    "RateLimits": {
+      "type": "object",
+      "properties": {
+        "requests_per_minute": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tokens_per_minute": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "Cache": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "ttl_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "similarity_threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "Observability": {
+      "type": "object",
+      "description": "Observability configuration",
+      "properties": {
+        "logging": {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": ["debug", "info", "warn", "error"]
+            },
+            "include_prompts": { "type": "boolean" },
+            "include_responses": { "type": "boolean" }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "export_format": {
+              "type": "string",
+              "enum": ["prometheus", "statsd", "otlp"]
+            }
+          }
+        },
+        "tracing": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "sample_rate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "export_to": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

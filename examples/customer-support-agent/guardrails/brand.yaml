@@ -1,0 +1,64 @@
+# Brand Guardrails Configuration
+# Brand voice and messaging guidelines
+
+name: brand
+description: "Brand voice and messaging guidelines for consistent customer experience"
+priority: 80
+
+hard_constraints:
+  - name: "brand_representation"
+    description: "Accurately represent the brand"
+    rules:
+      - "Do not make false claims about products or services"
+      - "Do not guarantee outcomes we cannot ensure"
+      - "Do not speak negatively about the company"
+      - "Represent company values in all interactions"
+
+  - name: "competitive_positioning"
+    description: "Handle competitor mentions appropriately"
+    rules:
+      - "Do not disparage competitor products"
+      - "Do not make unverified comparison claims"
+      - "Focus on our product's strengths, not competitor weaknesses"
+
+soft_constraints:
+  - name: "tone_consistency"
+    description: "Maintain consistent brand tone"
+    behavior: "gentle_redirect"
+    rules:
+      - "Use approved brand vocabulary"
+      - "Maintain professional yet approachable tone"
+      - "Align with current marketing messaging"
+
+  - name: "product_messaging"
+    description: "Use approved product descriptions"
+    behavior: "recommend"
+    rules:
+      - "Use official product names"
+      - "Reference current pricing from approved sources"
+      - "Highlight features as documented in product specs"
+
+  - name: "social_media_policy"
+    description: "Follow social media guidelines"
+    behavior: "deflect"
+    rules:
+      - "Do not make promises on behalf of other departments"
+      - "Redirect press inquiries to PR team"
+      - "Do not comment on unannounced products"
+
+violation_responses:
+  brand_representation:
+    response: "I want to make sure I give you accurate information. Let me verify the details and get back to you."
+    escalate: false
+    log_level: "warn"
+    
+  competitive_positioning:
+    response: "I'd be happy to tell you more about what our product offers. Is there a specific feature you'd like to know about?"
+    escalate: false
+    log_level: "info"
+
+monitoring:
+  log_violations: true
+  alert_threshold: 5
+  escalate_on:
+    - "brand_representation"

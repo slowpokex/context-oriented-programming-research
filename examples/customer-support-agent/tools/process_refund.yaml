@@ -1,0 +1,109 @@
+# Tool Definition: Process Refund
+# Initiates a refund for an order
+
+name: process_refund
+description: "Initiate a refund for a customer order"
+version: "1.0.0"
+
+openai_spec:
+  type: function
+  function:
+    name: process_refund
+    description: "Processes a refund for an eligible order. Requires order lookup first."
+    parameters:
+      type: object
+      properties:
+        order_id:
+          type: string
+          description: "The order ID to refund"
+          pattern: "^#?[A-Z]{0,3}-?[0-9]{4,10}$"
+        amount:
+          type: number
+          description: "Refund amount in dollars. Leave empty for full refund."
+          minimum: 0.01
+        reason:
+          type: string
+          description: "Reason for the refund"
+          enum: ["defective", "not_as_described", "changed_mind", "duplicate_order", "shipping_issue", "other"]
+        refund_method:
+          type: string
+          description: "How to issue the refund"
+          enum: ["original_payment", "store_credit"]
+          default: "original_payment"
+        notes:
+          type: string
+          description: "Additional notes about the refund"
+          maxLength: 500
+      required: ["order_id", "reason"]
+
+response_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+    refund:
+      type: object
+      properties:
+        id:
+          type: string
+        order_id:
+          type: string
+        amount:
+          type: number
+        method:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "processing", "completed", "failed"]
+        estimated_completion:
+          type: string
+    error:
+      type: object
+      properties:
+        code:
+          type: string
+          enum: ["ORDER_NOT_FOUND", "NOT_ELIGIBLE", "AMOUNT_EXCEEDS_ORDER", "ALREADY_REFUNDED", "REQUIRES_APPROVAL"]
+        message:
+          type: string
+
+examples:
+  - description: "Full refund for defective item"
+    input:
+      order_id: "#12345"
+      reason: "defective"
+      refund_method: "original_payment"
+    output:
+      success: true
+      refund:
+        id: "REF-001234"
+        order_id: "#12345"
+        amount: 92.86
+        method: "original_payment"
+        status: "processing"
+        estimated_completion: "5-7 business days"
+
+  - description: "Refund requires approval"
+    input:
+      order_id: "#99999"
+      amount: 750.00
+      reason: "other"
+    output:
+      success: false
+      error:
+        code: "REQUIRES_APPROVAL"
+        message: "Refund amount exceeds $500 limit. Escalating for manager approval."
+
+security:
+  - "Verify order belongs to the authenticated customer"
+  - "Check refund eligibility before processing"
+  - "Enforce refund amount limits"
+  - "Log all refund attempts for audit"
+  - "Require manager approval for refunds over $500"
+
+rate_limits:
+  per_session: 3
+  per_minute: 1
+
+constraints:
+  requires_approval: true
+  cost_tier: "high"

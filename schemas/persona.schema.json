@@ -1,0 +1,213 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cop.dev/schema/persona-v1.json",
+  "title": "COP Persona Configuration",
+  "description": "Schema for Context-Oriented Programming persona definition files",
+  "type": "object",
+  "required": ["name"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Persona identifier",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_-]*$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the persona",
+      "maxLength": 256
+    },
+    "tone": {
+      "$ref": "#/definitions/Tone"
+    },
+    "communication_style": {
+      "$ref": "#/definitions/CommunicationStyle"
+    },
+    "vocabulary": {
+      "$ref": "#/definitions/Vocabulary"
+    },
+    "response_patterns": {
+      "$ref": "#/definitions/ResponsePatterns"
+    },
+    "behavior_modifiers": {
+      "type": "array",
+      "description": "List of behavior modification rules",
+      "items": {
+        "type": "string"
+      }
+    },
+    "example_exchanges": {
+      "type": "array",
+      "description": "Example customer-agent exchanges",
+      "items": {
+        "$ref": "#/definitions/ExampleExchange"
+      }
+    }
+  },
+  "definitions": {
+    "Tone": {
+      "type": "object",
+      "description": "Tone configuration for the persona",
+      "additionalProperties": false,
+      "properties": {
+        "formality": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Level of formality in communication"
+        },
+        "warmth": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Level of warmth in communication"
+        },
+        "urgency": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Sense of urgency in responses"
+        },
+        "empathy": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Level of empathy expressed"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Level of confidence in responses"
+        },
+        "enthusiasm": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Level of enthusiasm"
+        }
+      }
+    },
+    "CommunicationStyle": {
+      "type": "object",
+      "description": "Communication style settings",
+      "additionalProperties": true,
+      "properties": {
+        "greeting": {
+          "type": "string",
+          "enum": ["informal", "formal", "none", "casual", "minimal", "friendly", "warm"],
+          "description": "Style of greeting"
+        },
+        "closing": {
+          "type": "string",
+          "enum": ["informal", "formal", "none", "warm", "minimal", "encouraging", "casual"],
+          "description": "Style of closing"
+        },
+        "use_contractions": {
+          "type": "boolean",
+          "description": "Whether to use contractions (e.g., don't, won't)"
+        },
+        "use_emoji": {
+          "type": "boolean",
+          "description": "Whether to use emoji in responses"
+        },
+        "sentence_structure": {
+          "type": "string",
+          "enum": ["simple", "moderate", "complex", "direct", "short", "clear"],
+          "description": "Complexity of sentence structure"
+        },
+        "response_length": {
+          "type": "string",
+          "enum": ["brief", "moderate", "detailed", "minimal", "concise"],
+          "description": "Preferred length of responses"
+        }
+      }
+    },
+    "Vocabulary": {
+      "type": "object",
+      "description": "Vocabulary preferences",
+      "additionalProperties": false,
+      "properties": {
+        "preferred": {
+          "type": "array",
+          "description": "Words and phrases to use",
+          "items": {
+            "type": "string"
+          }
+        },
+        "avoid": {
+          "type": "array",
+          "description": "Words and phrases to avoid",
+          "items": {
+            "type": "string"
+          }
+        },
+        "technical_level": {
+          "type": "string",
+          "enum": ["beginner", "intermediate", "advanced", "expert"],
+          "description": "Level of technical vocabulary"
+        }
+      }
+    },
+    "ResponsePatterns": {
+      "type": "object",
+      "description": "Templates for common response types",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "properties": {
+        "acknowledgment": {
+          "type": "string",
+          "description": "Template for acknowledging customer inquiry"
+        },
+        "clarification": {
+          "type": "string",
+          "description": "Template for asking clarification"
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Template for resolution messages"
+        },
+        "escalation": {
+          "type": "string",
+          "description": "Template for escalation messages"
+        },
+        "closing": {
+          "type": "string",
+          "description": "Template for closing messages"
+        },
+        "apology": {
+          "type": "string",
+          "description": "Template for apology messages"
+        },
+        "confirmation": {
+          "type": "string",
+          "description": "Template for confirmation messages"
+        }
+      }
+    },
+    "ExampleExchange": {
+      "type": "object",
+      "description": "Example user-agent exchange",
+      "additionalProperties": true,
+      "anyOf": [
+        { "required": ["customer", "response"] },
+        { "required": ["user", "response"] }
+      ],
+      "properties": {
+        "customer": {
+          "type": "string",
+          "description": "Customer message"
+        },
+        "user": {
+          "type": "string",
+          "description": "User message (alternative to customer)"
+        },
+        "response": {
+          "type": "string",
+          "description": "Agent response"
+        },
+        "context": {
+          "type": "string",
+          "description": "Optional context for the exchange"
+        }
+      }
+    }
+  }
+}

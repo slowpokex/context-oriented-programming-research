@@ -1,0 +1,39 @@
+# Code Quality Tests: Syntax Validation
+# Deterministic tests for generated code quality
+
+name: code_quality_tests
+type: deterministic
+description: "Tests for generated Playwright test code quality"
+
+test_cases:
+  - id: "valid_typescript"
+    name: "Generated code is valid TypeScript"
+    input:
+      user_message: "Write a test for the login page"
+      context:
+        language: "typescript"
+    expected_behaviors:
+      - "Uses TypeScript syntax"
+      - "Includes proper imports"
+      - "Has no syntax errors"
+
+  - id: "uses_playwright_api"
+    name: "Uses Playwright best practices"
+    input:
+      user_message: "Write a test to click a button"
+      context:
+        project_type: "web-application"
+    expected_behaviors:
+      - "Uses getByRole or getByTestId selectors"
+      - "Avoids hardcoded waits"
+      - "Uses proper assertions"
+
+  - id: "includes_describe_block"
+    name: "Tests are properly structured"
+    input:
+      user_message: "Write tests for user registration"
+      context: {}
+    expected_output_pattern: "test\\.describe\\("
+
+passing_threshold: 0.90
+timeout_seconds: 60
