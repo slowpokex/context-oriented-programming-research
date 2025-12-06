@@ -1,3 +1,13 @@
+---
+description: Guidelines for contributing to the Context-Oriented Programming (COP) research repository
+globs:
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/*.md"
+  - "examples/**/*"
+alwaysApply: true
+---
+
 # Context-Oriented Programming (COP) Research Repository
 
 ## Project Overview
