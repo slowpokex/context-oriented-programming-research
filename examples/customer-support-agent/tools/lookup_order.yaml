@@ -1,0 +1,179 @@
+# Tool Definition: Order Lookup
+# Allows the agent to look up order details
+
+name: lookup_order
+description: "Look up customer order details by order ID or customer email"
+version: "1.0.0"
+
+# OpenAI Function Calling format
+openai_spec:
+  type: function
+  function:
+    name: lookup_order
+    description: "Retrieves order details including status, items, shipping information, and payment details"
+    parameters:
+      type: object
+      properties:
+        order_id:
+          type: string
+          description: "The unique order identifier (e.g., #12345 or ORD-12345)"
+          pattern: "^#?[A-Z]{0,3}-?[0-9]{4,10}$"
+        customer_email:
+          type: string
+          description: "Customer's email address to look up their orders"
+          format: email
+        include_items:
+          type: boolean
+          description: "Whether to include line item details"
+          default: true
+        include_tracking:
+          type: boolean
+          description: "Whether to include shipping tracking information"
+          default: true
+      oneOf:
+        - required: ["order_id"]
+        - required: ["customer_email"]
+
+# Response schema
+response_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+    order:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "processing", "shipped", "delivered", "cancelled", "returned"]
+        placed_date:
+          type: string
+          format: date-time
+        customer:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              quantity:
+                type: integer
+              price:
+                type: number
+              sku:
+                type: string
+        subtotal:
+          type: number
+        shipping_cost:
+          type: number
+        tax:
+          type: number
+        total:
+          type: number
+        shipping:
+          type: object
+          properties:
+            address:
+              type: string
+            method:
+              type: string
+            tracking_number:
+              type: string
+            carrier:
+              type: string
+            estimated_delivery:
+              type: string
+              format: date
+            tracking_history:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date-time
+                  status:
+                    type: string
+                  location:
+                    type: string
+        refund_eligible:
+          type: boolean
+        return_window_ends:
+          type: string
+          format: date
+    error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+# Example usage and responses
+examples:
+  - description: "Successful order lookup"
+    input:
+      order_id: "#12345"
+    output:
+      success: true
+      order:
+        id: "#12345"
+        status: "shipped"
+        placed_date: "2024-01-10T14:30:00Z"
+        customer:
+          name: "Jane Doe"
+          email: "jane@example.com"
+        items:
+          - name: "Wireless Headphones"
+            quantity: 1
+            price: 79.99
+            sku: "WH-100"
+        subtotal: 79.99
+        shipping_cost: 5.99
+        tax: 6.88
+        total: 92.86
+        shipping:
+          address: "123 Main St, Anytown, ST 12345"
+          method: "Standard Shipping"
+          tracking_number: "1Z999AA10123456784"
+          carrier: "UPS"
+          estimated_delivery: "2024-01-17"
+          tracking_history:
+            - date: "2024-01-12T08:00:00Z"
+              status: "Package picked up"
+              location: "Distribution Center, CA"
+            - date: "2024-01-13T14:00:00Z"
+              status: "In transit"
+              location: "Phoenix, AZ"
+        refund_eligible: true
+        return_window_ends: "2024-02-17"
+
+  - description: "Order not found"
+    input:
+      order_id: "#99999"
+    output:
+      success: false
+      error:
+        code: "ORDER_NOT_FOUND"
+        message: "No order found with ID #99999"
+
+# Security and privacy rules
+security:
+  - "Only return order data to the authenticated customer"
+  - "Never reveal other customers' order information"
+  - "Mask full credit card numbers (show last 4 digits only)"
+  - "Log all order lookups for audit purposes"
+
+# Rate limiting
+rate_limits:
+  per_session: 20
+  per_minute: 5

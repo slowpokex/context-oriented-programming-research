@@ -1,0 +1,157 @@
+# Behavioral Quality Tests
+# These tests evaluate response quality using LLM-as-judge
+
+name: quality_tests
+type: llm-judged
+judge_model: gpt-4
+judge_temperature: 0.0
+
+evaluation_criteria:
+  helpfulness:
+    weight: 0.35
+    description: "Does the response effectively address the customer's needs?"
+    rubric:
+      5: "Completely addresses the customer's needs with actionable next steps"
+      4: "Addresses most needs, minor gaps in completeness"
+      3: "Partially addresses needs, some important information missing"
+      2: "Minimal help provided, significant gaps"
+      1: "Fails to address customer needs or provides wrong information"
+      
+  clarity:
+    weight: 0.25
+    description: "Is the response clear and easy to understand?"
+    rubric:
+      5: "Crystal clear, well-structured, easy to follow"
+      4: "Clear with minor areas that could be improved"
+      3: "Understandable but could be clearer"
+      2: "Confusing or poorly organized"
+      1: "Very difficult to understand"
+      
+  empathy:
+    weight: 0.20
+    description: "Does the response show appropriate empathy and understanding?"
+    rubric:
+      5: "Excellent empathy, acknowledges feelings appropriately"
+      4: "Good empathy, minor opportunities missed"
+      3: "Some empathy shown but feels scripted"
+      2: "Little empathy, feels transactional"
+      1: "No empathy, dismissive or cold"
+      
+  accuracy:
+    weight: 0.20
+    description: "Is the information provided accurate?"
+    rubric:
+      5: "All information is accurate and up-to-date"
+      4: "Mostly accurate with minor imprecision"
+      3: "Generally accurate but some errors"
+      2: "Multiple inaccuracies"
+      1: "Significantly inaccurate or misleading"
+
+test_cases:
+  - id: "order_status_inquiry"
+    name: "Basic order status inquiry"
+    input:
+      customer_message: "Hi, I placed an order 3 days ago and haven't received any shipping confirmation yet. My order number is #12345. Can you help?"
+      context:
+        order:
+          id: "#12345"
+          status: "processing"
+          placed_date: "2024-01-10"
+          estimated_ship_date: "2024-01-15"
+    expected_behaviors:
+      - "Acknowledges the customer's concern"
+      - "Looks up the order"
+      - "Provides current status information"
+      - "Sets expectations for shipping"
+      - "Offers further assistance"
+    minimum_scores:
+      helpfulness: 4
+      clarity: 4
+      empathy: 3
+      accuracy: 5
+
+  - id: "refund_request_valid"
+    name: "Valid refund request within policy"
+    input:
+      customer_message: "I received my order yesterday but the product is defective. I'd like a refund please."
+      context:
+        order:
+          id: "#54321"
+          status: "delivered"
+          amount: 49.99
+          delivered_date: "2024-01-12"
+          refund_eligible: true
+    expected_behaviors:
+      - "Expresses apology for defective product"
+      - "Confirms refund eligibility"
+      - "Processes or explains refund process"
+      - "Provides timeline for refund"
+    minimum_scores:
+      helpfulness: 4
+      clarity: 4
+      empathy: 4
+      accuracy: 5
+
+  - id: "angry_customer"
+    name: "Handling an angry customer"
+    input:
+      customer_message: "This is absolutely ridiculous!! I've been waiting for my package for 2 weeks now and nobody can tell me where it is. Your company is terrible and I want my money back NOW!"
+      context:
+        order:
+          id: "#99999"
+          status: "delayed"
+          placed_date: "2024-01-01"
+          last_tracking_update: "In transit - delayed due to weather"
+    expected_behaviors:
+      - "Remains calm and professional"
+      - "Acknowledges the customer's frustration"
+      - "Does not become defensive"
+      - "Provides concrete information about the order"
+      - "Offers a solution or next steps"
+    minimum_scores:
+      helpfulness: 4
+      clarity: 4
+      empathy: 5
+      accuracy: 4
+
+  - id: "ambiguous_request"
+    name: "Handling ambiguous request"
+    input:
+      customer_message: "I need to change my order"
+      context:
+        customer:
+          email: "customer@example.com"
+          recent_orders: ["#11111", "#22222"]
+    expected_behaviors:
+      - "Asks for clarification about which order"
+      - "Asks what changes are needed"
+      - "Does not assume or make incorrect changes"
+      - "Offers helpful options"
+    minimum_scores:
+      helpfulness: 4
+      clarity: 5
+      empathy: 3
+      accuracy: 5
+
+  - id: "feature_request"
+    name: "Product feature question"
+    input:
+      customer_message: "Does your premium plan include API access? I'm trying to integrate with my own systems."
+      context:
+        product:
+          premium_features:
+            - "Priority support"
+            - "API access (1000 calls/day)"
+            - "Custom branding"
+    expected_behaviors:
+      - "Confirms API access is included"
+      - "Provides relevant details (rate limits)"
+      - "Offers to help with next steps"
+    minimum_scores:
+      helpfulness: 5
+      clarity: 4
+      empathy: 3
+      accuracy: 5
+
+passing_threshold: 0.85  # 85% of tests must pass
+aggregate_minimum: 3.5   # Average score across all criteria must be >= 3.5
