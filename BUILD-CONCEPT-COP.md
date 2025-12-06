@@ -506,7 +506,7 @@ The core artifact: a merged, validated context specification.
 ```json
 {
   "version": "1.2.0",
-  "compiled_at": "2024-01-15T10:30:00Z",
+  "compiled_at": "2025-01-15T10:30:00Z",
   "system_prompt": "You are a support agent for Acme Corp...",
   "active_persona": "friendly",
   "guardrails": [
@@ -614,7 +614,7 @@ packages:
         test_hash: "sha256:abc123..."
         result_hash: "sha256:def456..."
         quality_score: 0.94
-        date: "2024-01-15"
+        date: "2025-01-15"
 
 # New build with same test_hash but different model version
 # → Detect drift, re-run evaluation
@@ -825,4 +825,4 @@ Understanding this shift is crucial for developers transitioning to COP. The bui
 ---
 
 *Document Version: 1.0.0*  
-*Last Updated: December 2024*
+*Last Updated: December 2025*

@@ -117,4 +117,4 @@ See [`examples/customer-support-agent/`](./examples/customer-support-agent/) for
 
 ---
 
-*Research conducted: December 2024*
+*Research conducted: December 2025*

@@ -62,7 +62,7 @@ This document distills the key insights, evidence, and recommendations gathered 
 5. **Expand the package gallery** beyond customer support (research assistants, analytics bots, compliance reviewers) to prove format portability.
 6. **Establish governance** via an open working group to prevent vendor capture and guide roadmap phases (foundation → ecosystem → maturity → standardization).
 
-## Additional Findings: Deep Analysis (December 2024)
+## Additional Findings: Deep Analysis (December 2025)
 
 ### The "Build" Concept in COP
 

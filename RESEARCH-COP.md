@@ -392,10 +392,10 @@ version:
   llm_tested:
     - model: "gpt-4-0125-preview"
       eval_score: 0.94
-      eval_date: "2024-01-15"
+      eval_date: "2025-01-15"
     - model: "claude-3-opus-20240229"
       eval_score: 0.91
-      eval_date: "2024-03-01"
+      eval_date: "2025-03-01"
   
 evaluation_hash: "sha256:abc123..."  # Deterministic eval fingerprint
 ```
@@ -1079,7 +1079,7 @@ The window for establishing foundational standards is approximately 18-24 months
 
 ---
 
-## Appendix C: Deep Analysis Addendum (December 2024)
+## Appendix C: Deep Analysis Addendum (December 2025)
 
 ### Additional Insights on the "Build" Concept
 
@@ -1155,6 +1155,6 @@ This shift requires new mental models:
 
 ---
 
-*Research compiled: December 2024*  
+*Research compiled: December 2025*  
 *Document version: 1.1.0*  
-*Last updated: December 2024 (Deep Analysis Addendum)*
+*Last updated: December 2025 (Deep Analysis Addendum)*

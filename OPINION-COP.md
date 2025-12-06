@@ -222,5 +222,5 @@ This is not just a new tool or framework. This is a new way of thinking about pr
 ---
 
 *Opinion Document*  
-*Date: December 2024*  
+*Date: December 2025*  
 *Author: AI Analysis of COP Ecosystem*

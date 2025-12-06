@@ -541,7 +541,7 @@ packages:
         test_hash: "sha256:abc123..."  # Hash of test cases
         result_hash: "sha256:def456..." # Hash of results
         quality_score: 0.94
-        date: "2024-01-15"
+        date: "2025-01-15"
 ```
 
 ### 5.3 Build Optimization Strategies
@@ -568,7 +568,7 @@ packages:
 ```json
 {
   "version": "1.2.0",
-  "compiled_at": "2024-01-15T10:30:00Z",
+  "compiled_at": "2025-01-15T10:30:00Z",
   "system_prompt": "You are a support agent for Acme Corp...",
   "active_persona": "professional",
   "guardrails": [
@@ -731,5 +731,5 @@ This paradigm is still emerging, but the trajectory is clear: we're moving towar
 
 ---
 
-*Analysis Date: December 2024*  
+*Analysis Date: December 2025*  
 *Document Version: 1.0.0*
