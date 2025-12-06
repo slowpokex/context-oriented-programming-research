@@ -1834,5 +1834,855 @@ The implementation is designed to be:
 
 ---
 
-*Document Version: 1.0.0*  
-*Last Updated: December 2025*
+## 13. Advanced Algorithms
+
+### 13.1 Semantic Conflict Detection
+
+Beyond simple keyword matching, we use semantic similarity to detect guardrail conflicts:
+
+```typescript
+class SemanticConflictDetector {
+  private embeddingModel: EmbeddingModel;
+  
+  async detectConflicts(
+    guardrails: GuardrailNode[]
+  ): Promise<Conflict[]> {
+    const conflicts: Conflict[] = [];
+    const embeddings = await this.generateEmbeddings(guardrails);
+    
+    // Compare all pairs
+    for (let i = 0; i < guardrails.length; i++) {
+      for (let j = i + 1; j < guardrails.length; j++) {
+        const similarity = cosineSimilarity(
+          embeddings[i],
+          embeddings[j]
+        );
+        
+        // High similarity + opposite sentiment = conflict
+        if (similarity > 0.85) {
+          const sentiment1 = await this.analyzeSentiment(guardrails[i]);
+          const sentiment2 = await this.analyzeSentiment(guardrails[j]);
+          
+          if (this.areOpposite(sentiment1, sentiment2)) {
+            conflicts.push({
+              type: 'semantic_conflict',
+              rule1: guardrails[i],
+              rule2: guardrails[j],
+              similarity,
+              severity: this.calculateSeverity(similarity, sentiment1, sentiment2)
+            });
+          }
+        }
+      }
+    }
+    
+    return conflicts;
+  }
+  
+  private async generateEmbeddings(
+    guardrails: GuardrailNode[]
+  ): Promise<number[][]> {
+    const texts = guardrails.map(g => 
+      g.rules.map(r => r.content).join(' ')
+    );
+    
+    return await this.embeddingModel.embed(texts);
+  }
+}
+```
+
+### 13.2 Intelligent Token Optimization
+
+```typescript
+class TokenOptimizer {
+  private tokenizer: Tokenizer;
+  private llmClient: LLMClient;
+  
+  async optimize(
+    context: CompiledContext,
+    targetTokens: number
+  ): Promise<OptimizedContext> {
+    const currentTokens = this.tokenizer.count(context);
+    
+    if (currentTokens <= targetTokens) {
+      return context; // Already optimized
+    }
+    
+    const reductionRatio = targetTokens / currentTokens;
+    
+    // Strategy selection based on reduction needed
+    if (reductionRatio < 0.5) {
+      // Aggressive: Summarize + Remove
+      return await this.aggressiveOptimize(context, targetTokens);
+    } else if (reductionRatio < 0.8) {
+      // Moderate: Compress + Reorder
+      return await this.moderateOptimize(context, targetTokens);
+    } else {
+      // Conservative: Minify + Optimize
+      return await this.conservativeOptimize(context, targetTokens);
+    }
+  }
+  
+  private async aggressiveOptimize(
+    context: CompiledContext,
+    targetTokens: number
+  ): Promise<OptimizedContext> {
+    // 1. Summarize system prompt
+    const summarizedPrompt = await this.summarize(
+      context.systemPrompt.compiled,
+      targetTokens * 0.4
+    );
+    
+    // 2. Remove low-priority guardrails
+    const essentialGuardrails = context.guardrails
+      .filter(g => g.priority >= 90)
+      .slice(0, 5); // Keep top 5
+    
+    // 3. Convert static knowledge to dynamic
+    const dynamicKnowledge = context.knowledge.map(k => {
+      if (k.type === 'static' && estimateTokens(k.content) > 500) {
+        return {
+          ...k,
+          type: 'dynamic',
+          content: null,
+          ragIndex: createRAGIndex(k.content)
+        };
+      }
+      return k;
+    });
+    
+    return {
+      ...context,
+      systemPrompt: { ...context.systemPrompt, compiled: summarizedPrompt },
+      guardrails: essentialGuardrails,
+      knowledge: dynamicKnowledge
+    };
+  }
+  
+  private async summarize(
+    text: string,
+    targetTokens: number
+  ): Promise<string> {
+    const prompt = `Summarize the following text to approximately ${targetTokens} tokens while preserving all critical information and instructions:\n\n${text}`;
+    
+    const response = await this.llmClient.complete({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: targetTokens * 1.2 // 20% buffer
+    });
+    
+    return response.content;
+  }
+}
+```
+
+### 13.3 Dependency Graph Visualization
+
+```typescript
+class DependencyGraphVisualizer {
+  visualize(graph: DependencyGraph): GraphVisualization {
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+    
+    // Create nodes
+    for (const [name, node] of graph.nodes) {
+      nodes.push({
+        id: name,
+        label: `${name}@${node.resolvedVersion}`,
+        type: node.dependencies.length > 0 ? 'package' : 'leaf',
+        metadata: {
+          version: node.resolvedVersion,
+          location: node.location,
+          conflicts: node.conflicts
+        }
+      });
+    }
+    
+    // Create edges
+    for (const edge of graph.edges) {
+      edges.push({
+        from: edge.from,
+        to: edge.to,
+        type: edge.type,
+        label: edge.constraint.toString()
+      });
+    }
+    
+    // Calculate layout (hierarchical)
+    const layout = this.calculateHierarchicalLayout(nodes, edges);
+    
+    return {
+      nodes: nodes.map((n, i) => ({
+        ...n,
+        x: layout.positions[i].x,
+        y: layout.positions[i].y
+      })),
+      edges,
+      metadata: {
+        totalPackages: nodes.length,
+        maxDepth: layout.maxDepth,
+        conflicts: graph.conflicts.length
+      }
+    };
+  }
+  
+  private calculateHierarchicalLayout(
+    nodes: GraphNode[],
+    edges: GraphEdge[]
+  ): Layout {
+    // Build adjacency list
+    const adjList = new Map<string, string[]>();
+    for (const edge of edges) {
+      if (!adjList.has(edge.from)) {
+        adjList.set(edge.from, []);
+      }
+      adjList.get(edge.from)!.push(edge.to);
+    }
+    
+    // Calculate depths (BFS from root)
+    const depths = new Map<string, number>();
+    const queue: string[] = ['root']; // Assuming root package
+    depths.set('root', 0);
+    
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const depth = depths.get(current)!;
+      
+      for (const neighbor of adjList.get(current) || []) {
+        if (!depths.has(neighbor)) {
+          depths.set(neighbor, depth + 1);
+          queue.push(neighbor);
+        }
+      }
+    }
+    
+    // Position nodes by depth
+    const positions: Position[] = [];
+    const nodesByDepth = new Map<number, string[]>();
+    
+    for (const [node, depth] of depths) {
+      if (!nodesByDepth.has(depth)) {
+        nodesByDepth.set(depth, []);
+      }
+      nodesByDepth.get(depth)!.push(node);
+    }
+    
+    const maxDepth = Math.max(...Array.from(depths.values()));
+    const nodeIndexMap = new Map<string, number>();
+    
+    for (let depth = 0; depth <= maxDepth; depth++) {
+      const nodesAtDepth = nodesByDepth.get(depth) || [];
+      const y = depth * 100; // Vertical spacing
+      
+      nodesAtDepth.forEach((node, index) => {
+        const x = (index - nodesAtDepth.length / 2) * 150; // Horizontal spacing
+        nodeIndexMap.set(node, positions.length);
+        positions.push({ x, y });
+      });
+    }
+    
+    return {
+      positions,
+      maxDepth
+    };
+  }
+}
+```
+
+### 13.4 Incremental Evaluation
+
+```typescript
+class IncrementalEvaluator {
+  private previousResults: Map<string, EvaluationResults>;
+  
+  async evaluateIncremental(
+    context: CompiledContext,
+    testSuites: TestSuite[],
+    changedFiles: string[]
+  ): Promise<EvaluationResults> {
+    const results: EvaluationResults = {
+      suites: [],
+      aggregate: { passed: 0, failed: 0, total: 0, score: 0 },
+      fingerprint: null
+    };
+    
+    for (const suite of testSuites) {
+      // Check if suite is affected by changes
+      const affected = this.isAffected(suite, changedFiles);
+      
+      if (!affected && this.previousResults.has(suite.name)) {
+        // Reuse previous results
+        results.suites.push(this.previousResults.get(suite.name)!);
+      } else {
+        // Re-run affected suites
+        const suiteResults = await this.runTestSuite(context, suite);
+        results.suites.push(suiteResults);
+        this.previousResults.set(suite.name, suiteResults);
+      }
+    }
+    
+    // Recalculate aggregate
+    this.calculateAggregate(results);
+    
+    return results;
+  }
+  
+  private isAffected(
+    suite: TestSuite,
+    changedFiles: string[]
+  ): boolean {
+    // Check if any test references changed files
+    for (const test of suite.tests) {
+      if (test.sourceFiles) {
+        for (const sourceFile of test.sourceFiles) {
+          if (changedFiles.includes(sourceFile)) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
+  }
+}
+```
+
+### 13.5 Build Pipeline Orchestration
+
+```typescript
+class BuildPipeline {
+  private stages: BuildStage[];
+  private state: BuildState;
+  private eventEmitter: EventEmitter;
+  
+  constructor() {
+    this.stages = [
+      new LoadStage(),
+      new ResolveStage(),
+      new CompileStage(),
+      new ValidateStage(),
+      new EvaluateStage(),
+      new OptimizeStage(),
+      new TransformStage(),
+      new PackageStage()
+    ];
+    
+    this.state = new BuildState();
+    this.eventEmitter = new EventEmitter();
+  }
+  
+  async execute(context: ContextAST): Promise<BuildState> {
+    this.eventEmitter.emit('build:start', { context });
+    
+    try {
+      for (let i = 0; i < this.stages.length; i++) {
+        const stage = this.stages[i];
+        
+        this.eventEmitter.emit('stage:start', {
+          stage: stage.name,
+          index: i
+        });
+        
+        const startTime = Date.now();
+        
+        // Execute stage
+        this.state = await stage.execute(this.state, context);
+        
+        const duration = Date.now() - startTime;
+        
+        this.eventEmitter.emit('stage:complete', {
+          stage: stage.name,
+          duration,
+          state: this.state
+        });
+        
+        // Check for errors
+        if (this.state.errors.length > 0 && stage.critical) {
+          throw new BuildError(
+            `Stage ${stage.name} failed with errors`,
+            this.state.errors
+          );
+        }
+        
+        // Check for warnings
+        if (this.state.warnings.length > 0) {
+          this.eventEmitter.emit('stage:warnings', {
+            stage: stage.name,
+            warnings: this.state.warnings
+          });
+        }
+      }
+      
+      this.eventEmitter.emit('build:complete', { state: this.state });
+      return this.state;
+      
+    } catch (error) {
+      this.state.stage = BuildStage.FAILED;
+      this.state.errors.push({
+        type: 'build_failure',
+        message: error.message,
+        stage: this.state.stage
+      });
+      
+      this.eventEmitter.emit('build:failed', {
+        error,
+        state: this.state
+      });
+      
+      throw error;
+    }
+  }
+}
+```
+
+### 13.6 Parallel Test Execution
+
+```typescript
+class ParallelTestExecutor {
+  private maxConcurrency: number = 10;
+  private llmClient: LLMClient;
+  
+  async executeTests(
+    context: CompiledContext,
+    tests: TestCase[]
+  ): Promise<TestResult[]> {
+    // Group tests by type for optimal batching
+    const testGroups = this.groupTests(tests);
+    
+    // Execute groups in parallel, tests within group sequentially
+    const groupPromises = testGroups.map(group => 
+      this.executeGroup(context, group)
+    );
+    
+    const groupResults = await Promise.all(groupPromises);
+    
+    // Flatten results
+    return groupResults.flat();
+  }
+  
+  private groupTests(tests: TestCase[]): TestCase[][] {
+    const groups: Map<string, TestCase[]> = new Map();
+    
+    for (const test of tests) {
+      const key = `${test.type}-${test.model || 'default'}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(test);
+    }
+    
+    return Array.from(groups.values());
+  }
+  
+  private async executeGroup(
+    context: CompiledContext,
+    tests: TestCase[]
+  ): Promise<TestResult[]> {
+    const results: TestResult[] = [];
+    
+    // Use semaphore for concurrency control
+    const semaphore = new Semaphore(this.maxConcurrency);
+    
+    const promises = tests.map(async (test) => {
+      await semaphore.acquire();
+      try {
+        const result = await this.executeTest(context, test);
+        return result;
+      } finally {
+        semaphore.release();
+      }
+    });
+    
+    return await Promise.all(promises);
+  }
+}
+```
+
+### 13.7 Build Artifact Signing
+
+```typescript
+class ArtifactSigner {
+  private privateKey: PrivateKey;
+  
+  async sign(artifact: PackageArchive): Promise<Signature> {
+    // Generate manifest of all files
+    const manifest = this.generateManifest(artifact);
+    
+    // Create signature
+    const signature = await this.privateKey.sign(manifest);
+    
+    // Create signed manifest
+    const signedManifest = {
+      manifest,
+      signature: signature.toString('base64'),
+      algorithm: 'RS256',
+      timestamp: new Date().toISOString(),
+      signer: this.getSignerIdentity()
+    };
+    
+    return signedManifest;
+  }
+  
+  private generateManifest(artifact: PackageArchive): Manifest {
+    const files: ManifestFile[] = [];
+    
+    for (const file of artifact.files) {
+      files.push({
+        path: file.path,
+        hash: sha256(file.content),
+        size: file.content.length
+      });
+    }
+    
+    return {
+      version: '1.0',
+      files,
+      metadata: {
+        package: artifact.meta.name,
+        version: artifact.meta.version,
+        createdAt: new Date().toISOString()
+      }
+    };
+  }
+  
+  async verify(
+    artifact: PackageArchive,
+    signature: Signature
+  ): Promise<boolean> {
+    // Regenerate manifest
+    const manifest = this.generateManifest(artifact);
+    
+    // Verify signature
+    const publicKey = this.getPublicKey(signature.signer);
+    return await publicKey.verify(
+      Buffer.from(signature.signature, 'base64'),
+      JSON.stringify(manifest)
+    );
+  }
+}
+```
+
+### 13.8 Build Metrics Collection
+
+```typescript
+class BuildMetricsCollector {
+  private metrics: BuildMetrics;
+  
+  constructor() {
+    this.metrics = {
+      timings: {},
+      counts: {},
+      sizes: {},
+      errors: [],
+      warnings: []
+    };
+  }
+  
+  startTiming(operation: string): () => void {
+    const start = process.hrtime.bigint();
+    
+    return () => {
+      const duration = Number(process.hrtime.bigint() - start) / 1_000_000; // ms
+      this.metrics.timings[operation] = duration;
+    };
+  }
+  
+  recordCount(metric: string, count: number): void {
+    if (!this.metrics.counts[metric]) {
+      this.metrics.counts[metric] = 0;
+    }
+    this.metrics.counts[metric] += count;
+  }
+  
+  recordSize(metric: string, bytes: number): void {
+    this.metrics.sizes[metric] = bytes;
+  }
+  
+  getMetrics(): BuildMetrics {
+    return {
+      ...this.metrics,
+      summary: {
+        totalTime: Object.values(this.metrics.timings).reduce((a, b) => a + b, 0),
+        averageTime: this.calculateAverage(this.metrics.timings),
+        peakMemory: process.memoryUsage().heapUsed,
+        errorRate: this.metrics.errors.length / 
+          (this.metrics.errors.length + this.metrics.warnings.length + 1)
+      }
+    };
+  }
+}
+```
+
+### 13.9 Build Configuration Merging
+
+```typescript
+class BuildConfigMerger {
+  merge(
+    base: BuildConfiguration,
+    override: BuildConfiguration
+  ): BuildConfiguration {
+    return {
+      targets: this.mergeTargets(base.targets, override.targets),
+      preprocessing: this.mergeArrays(
+        base.preprocessing,
+        override.preprocessing
+      ),
+      postprocessing: this.mergeArrays(
+        base.postprocessing,
+        override.postprocessing
+      ),
+      optimization: {
+        ...base.optimization,
+        ...override.optimization
+      }
+    };
+  }
+  
+  private mergeTargets(
+    base: Map<string, TargetConfig>,
+    override: Map<string, TargetConfig>
+  ): Map<string, TargetConfig> {
+    const merged = new Map(base);
+    
+    for (const [name, config] of override) {
+      if (merged.has(name)) {
+        merged.set(name, {
+          ...merged.get(name)!,
+          ...config
+        });
+      } else {
+        merged.set(name, config);
+      }
+    }
+    
+    return merged;
+  }
+  
+  private mergeArrays<T>(base: T[], override: T[]): T[] {
+    // Override replaces base, but we can merge objects
+    if (override.length === 0) return base;
+    
+    const merged: T[] = [];
+    const overrideMap = new Map<string, T>();
+    
+    // Index override items by key if they're objects
+    for (const item of override) {
+      if (typeof item === 'object' && item !== null) {
+        const key = Object.keys(item)[0];
+        overrideMap.set(key, item);
+      }
+    }
+    
+    // Merge base items with overrides
+    for (const item of base) {
+      if (typeof item === 'object' && item !== null) {
+        const key = Object.keys(item)[0];
+        if (overrideMap.has(key)) {
+          merged.push({
+            ...item,
+            ...overrideMap.get(key)!
+          } as T);
+          overrideMap.delete(key);
+        } else {
+          merged.push(item);
+        }
+      } else {
+        merged.push(item);
+      }
+    }
+    
+    // Add remaining overrides
+    for (const item of overrideMap.values()) {
+      merged.push(item);
+    }
+    
+    return merged;
+  }
+}
+```
+
+### 13.10 Build Report Generation
+
+```typescript
+class BuildReportGenerator {
+  generate(state: BuildState): BuildReport {
+    return {
+      summary: {
+        status: state.stage === BuildStage.COMPLETE ? 'success' : 'failed',
+        duration: this.calculateDuration(state),
+        timestamp: new Date().toISOString()
+      },
+      stages: this.generateStageReports(state),
+      dependencies: this.generateDependencyReport(state),
+      evaluation: this.generateEvaluationReport(state),
+      artifacts: this.generateArtifactReport(state),
+      metrics: state.metrics,
+      errors: state.errors,
+      warnings: state.warnings
+    };
+  }
+  
+  private generateStageReports(state: BuildState): StageReport[] {
+    return [
+      {
+        name: 'load',
+        status: 'success',
+        duration: state.metrics.timings.load || 0,
+        filesLoaded: state.metrics.counts.filesLoaded || 0
+      },
+      {
+        name: 'resolve',
+        status: 'success',
+        duration: state.metrics.timings.resolve || 0,
+        dependenciesResolved: state.metrics.counts.dependencies || 0
+      },
+      // ... other stages
+    ];
+  }
+  
+  generateMarkdown(report: BuildReport): string {
+    let md = `# Build Report\n\n`;
+    md += `**Status**: ${report.summary.status}\n`;
+    md += `**Duration**: ${report.summary.duration}ms\n`;
+    md += `**Timestamp**: ${report.summary.timestamp}\n\n`;
+    
+    md += `## Stages\n\n`;
+    for (const stage of report.stages) {
+      md += `### ${stage.name}\n`;
+      md += `- Status: ${stage.status}\n`;
+      md += `- Duration: ${stage.duration}ms\n`;
+      if (stage.filesLoaded) {
+        md += `- Files Loaded: ${stage.filesLoaded}\n`;
+      }
+      md += `\n`;
+    }
+    
+    if (report.errors.length > 0) {
+      md += `## Errors\n\n`;
+      for (const error of report.errors) {
+        md += `- **${error.type}**: ${error.message}\n`;
+      }
+      md += `\n`;
+    }
+    
+    if (report.warnings.length > 0) {
+      md += `## Warnings\n\n`;
+      for (const warning of report.warnings) {
+        md += `- **${warning.type}**: ${warning.message}\n`;
+      }
+      md += `\n`;
+    }
+    
+    return md;
+  }
+}
+```
+
+---
+
+## 14. Testing the Build System
+
+### 14.1 Unit Tests for Build Stages
+
+```typescript
+describe('TemplateCompiler', () => {
+  it('should resolve simple variables', () => {
+    const compiler = new TemplateCompiler();
+    const template = parseTemplate('Hello {{name}}!');
+    const variables = new Map([['name', 'World']]);
+    
+    const result = compiler.compile(template, variables);
+    
+    expect(result).toBe('Hello World!');
+  });
+  
+  it('should handle default values', () => {
+    const compiler = new TemplateCompiler();
+    const template = parseTemplate('Hello {{name|Guest}}!');
+    const variables = new Map();
+    
+    const result = compiler.compile(template, variables);
+    
+    expect(result).toBe('Hello Guest!');
+  });
+  
+  it('should compile conditionals', () => {
+    const compiler = new TemplateCompiler();
+    const template = parseTemplate('{{#if premium}}Premium{{/if}}');
+    const variables = new Map([['premium', true]]);
+    
+    const result = compiler.compile(template, variables);
+    
+    expect(result).toBe('Premium');
+  });
+});
+```
+
+### 14.2 Integration Tests
+
+```typescript
+describe('Build Pipeline Integration', () => {
+  it('should build a complete package', async () => {
+    const context = createTestContext();
+    const pipeline = new BuildPipeline();
+    
+    const state = await pipeline.execute(context);
+    
+    expect(state.stage).toBe(BuildStage.COMPLETE);
+    expect(state.errors).toHaveLength(0);
+    expect(state.targetArtifacts.size).toBeGreaterThan(0);
+  });
+  
+  it('should handle dependency resolution', async () => {
+    const context = createContextWithDependencies();
+    const resolver = new DependencyResolver();
+    
+    const graph = await resolver.resolve(context.dependencies);
+    
+    expect(graph.nodes.size).toBeGreaterThan(0);
+    expect(graph.conflicts).toHaveLength(0);
+  });
+});
+```
+
+---
+
+## 15. Performance Benchmarks
+
+### 15.1 Build Time Benchmarks
+
+```typescript
+class BuildBenchmark {
+  async benchmark(context: ContextAST): Promise<BenchmarkResults> {
+    const results: BenchmarkResults = {
+      stages: {},
+      total: 0,
+      memory: {
+        peak: 0,
+        average: 0
+      }
+    };
+    
+    const memoryStart = process.memoryUsage().heapUsed;
+    const startTime = Date.now();
+    
+    const pipeline = new BuildPipeline();
+    const state = await pipeline.execute(context);
+    
+    const endTime = Date.now();
+    const memoryEnd = process.memoryUsage().heapUsed;
+    
+    results.total = endTime - startTime;
+    results.memory.peak = memoryEnd - memoryStart;
+    results.stages = state.metrics.timings;
+    
+    return results;
+  }
+}
+```
+
+---
+
+*Document Version: 1.1.0*  
+*Last Updated: December 2025*  
+*Added: Advanced algorithms, performance optimizations, testing strategies*
