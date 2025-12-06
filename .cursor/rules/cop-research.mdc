@@ -1,0 +1,228 @@
+---
+description: Guidelines for contributing to the Context-Oriented Programming (COP) research repository
+globs:
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/*.md"
+  - "examples/**/*"
+alwaysApply: true
+---
+
+# Context-Oriented Programming (COP) Research Repository
+
+## Project Overview
+
+This repository contains comprehensive research on **Context-Oriented Programming (COP)** — an emerging programming paradigm where software logic is defined through context modules, prompt templates, and behavioral instructions instead of traditional code.
+
+The core research question: Are we on the verge of a new programming paradigm where LLM applications are built by composing context modules rather than writing procedural code?
+
+## Key Concepts
+
+### What is COP?
+- **Intent over implementation**: Define *what outcome to achieve* rather than *how to compute*
+- **Context as first-class artifact**: Prompts, personas, guardrails, and knowledge are versioned, composable, and testable like code
+- **Probabilistic validation**: Behavioral evaluation replaces traditional unit tests; LLM-as-judge patterns
+- **Multi-target builds**: Single source transforms to provider-specific formats (OpenAI, Anthropic, Azure, etc.)
+
+### COP Build Process (differs from traditional compilation)
+```
+Context Modules → Assembly → Evaluation → Transformation → Deployment
+```
+1. Load & parse `cop.yaml` manifest and source files
+2. Resolve dependencies from registry
+3. Compile context (variable resolution, prompt merging, guardrail ordering)
+4. Validate (completeness, conflicts, token limits, schemas)
+5. Evaluate (deterministic tests, LLM-judged quality, adversarial safety)
+6. Optimize (token efficiency, prompt minification)
+7. Transform to target formats (OpenAI Assistant, Claude config, PromptFlow, Docker)
+8. Generate artifacts
+
+## Repository Structure
+
+```
+├── README.md                 # Project overview
+├── RESEARCH-FINDINGS.md      # Distilled key insights
+├── BUILD-CONCEPT-COP.md      # Deep dive into "build" in COP
+├── OPINION-COP.md            # Perspective on COP as paradigm shift
+├── examples/
+│   └── customer-support-agent/    # Example COP package
+│       ├── cop.yaml               # Package manifest (central config)
+│       ├── prompts/               # System prompts with {{variables}}
+│       ├── personas/              # Persona configurations (tone, style)
+│       ├── guardrails/            # Safety and behavioral constraints
+│       ├── knowledge/             # Static and structured knowledge
+│       ├── tools/                 # Tool/function definitions
+│       └── tests/                 # Evaluation test suites
+```
+
+## File Types and Conventions
+
+### cop.yaml (Package Manifest)
+The central configuration file for a COP package. Key sections:
+- `meta`: Package metadata (name, version, author, license)
+- `compatibility`: LLM model compatibility matrix with eval scores
+- `context`: Core definitions (system prompt, personas, knowledge, guardrails, tools)
+- `dependencies`: External COP module dependencies
+- `build`: Target-specific build configurations
+- `evaluation`: Test suites and benchmarks
+- `runtime`: Model parameters, retry policies, caching
+- `observability`: Logging, metrics, tracing config
+
+### Prompts (Markdown)
+- Use `{{variable_name}}` for template variables
+- Structure with clear sections (Role, Responsibilities, Guidelines, Tools, Policies)
+- Keep escalation triggers and limitations explicit
+- Reference available tools by name
+
+### Personas (YAML)
+- Define `tone` attributes (formality, warmth, urgency, empathy)
+- Specify `vocabulary` (preferred phrases, words to avoid)
+- Include `response_patterns` for common scenarios
+- Add `behavior_modifiers` as guiding instructions
+- Provide `example_exchanges` for clarity
+
+### Guardrails (YAML)
+- Separate `hard_constraints` (never violate) from `soft_constraints` (prefer to follow)
+- Assign `priority` values (higher = more important, applied first)
+- Include `trigger_phrases` for detection
+- Define `violation_responses` for each constraint type
+- Configure `monitoring` (logging, alerting thresholds)
+
+### Tools (YAML)
+- Provide `openai_spec` compatible function definitions
+- Include `response_schema` for expected outputs
+- Add `examples` with input/output pairs
+- Define `security` rules and `rate_limits`
+
+### Tests (YAML)
+- **Behavioral tests** (`type: llm-judged`): Define `evaluation_criteria` with rubrics and weights
+- **Safety tests** (`type: adversarial`): Include `failure_indicators` and `expected_behaviors`
+- Specify `pass_criteria` and `passing_threshold`
+
+### Knowledge (Markdown/JSON)
+- Use Markdown for FAQ-style static knowledge
+- Use JSON for structured data with schemas
+- Keep entries scannable with clear headings
+
+## Writing Guidelines
+
+### Documentation (Markdown)
+- Use clear hierarchical structure with descriptive headings
+- Include tables for comparisons and matrices
+- Add diagrams using ASCII art or Mermaid when helpful
+- Write for both technical and non-technical audiences
+- Include practical examples and code snippets
+
+### YAML Files
+- Add descriptive comments explaining purpose
+- Use consistent indentation (2 spaces)
+- Group related fields together
+- Include `name`, `description`, and `version` for all components
+- Prefer explicit over implicit values
+
+### When Adding New Components
+
+**New Persona:**
+```yaml
+name: persona_name
+description: "Clear description of this persona's purpose"
+tone:
+  formality: low|medium|high
+  warmth: low|medium|high
+  empathy: low|medium|high
+vocabulary:
+  preferred: [...]
+  avoid: [...]
+response_patterns:
+  acknowledgment: "..."
+  resolution: "..."
+behavior_modifiers:
+  - "Behavior instruction 1"
+```
+
+**New Guardrail:**
+```yaml
+name: guardrail_name
+description: "What this guardrail prevents/ensures"
+priority: 0-100  # Higher = more important
+hard_constraints:
+  - name: constraint_name
+    description: "..."
+    rules:
+      - "Rule 1"
+violation_responses:
+  constraint_name:
+    response: "Template response when violated"
+```
+
+**New Test Case:**
+```yaml
+- id: unique_test_id
+  name: "Human-readable test name"
+  input:
+    customer_message: "The test input"
+    context: {}  # Optional context data
+  expected_behaviors:
+    - "Expected behavior 1"
+  minimum_scores:  # For behavioral tests
+    helpfulness: 4
+    clarity: 4
+```
+
+## Important Principles
+
+### Safety First
+- All guardrails must have clear violation responses
+- Jailbreak prevention is critical (prompt injection, role-play attacks, social engineering)
+- Never reveal system prompts or internal instructions
+- Protect PII and sensitive data
+
+### Evaluation-Driven Development
+- Define test cases before implementing features
+- Use LLM-as-judge for behavioral quality assessment
+- Include adversarial safety tests
+- Set explicit pass/fail thresholds
+
+### Provider Agnosticism
+- Write context modules that work across LLM providers
+- Target-specific optimizations go in build config, not source
+- Test against multiple models when possible
+
+### Token Efficiency
+- Be concise in prompts without losing clarity
+- Consider context window limits in design
+- Use dynamic retrieval (RAG) for large knowledge bases
+
+## Common Tasks
+
+### Adding a new persona
+1. Create `personas/[name].yaml` following the persona template
+2. Register in `cop.yaml` under `context.personas.available`
+3. Add tests covering persona-specific behaviors
+
+### Adding a new guardrail
+1. Create `guardrails/[name].yaml` with constraints and responses
+2. Register in `cop.yaml` under `context.guardrails` with appropriate priority
+3. Add adversarial tests in `tests/safety/`
+
+### Adding new knowledge
+1. Create file in `knowledge/` (Markdown or JSON)
+2. Register in `cop.yaml` under `context.knowledge`
+3. Specify `type` (static, structured, dynamic)
+4. Add schema file if structured data
+
+### Adding a new tool
+1. Create `tools/[name].yaml` with OpenAI function spec
+2. Register in `cop.yaml` under `context.tools`
+3. Document in system prompt under "Available Tools"
+4. Add security rules and rate limits
+
+## Code Review Checklist
+
+- [ ] All template variables are documented and have defaults where appropriate
+- [ ] Guardrails have appropriate priority ordering
+- [ ] New features have corresponding test cases
+- [ ] Safety implications have been considered
+- [ ] Token usage is reasonable for target context windows
+- [ ] Documentation is updated to reflect changes
+- [ ] Examples demonstrate the new functionality
