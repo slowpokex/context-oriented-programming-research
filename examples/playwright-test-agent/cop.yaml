@@ -1,0 +1,305 @@
+# Example COP Package: Playwright Test Agent
+# This demonstrates a coding agent specialized in generating Playwright tests for specific projects
+
+meta:
+  name: "playwright-test-agent"
+  version: "1.0.0"
+  description: "AI agent specialized in generating and maintaining Playwright end-to-end tests for web applications"
+  author: "COP Examples"
+  license: "MIT"
+  repository: "https://github.com/cop-lang/examples"
+  keywords:
+    - testing
+    - playwright
+    - e2e
+    - automation
+    - code-generation
+    - quality-assurance
+
+# LLM Compatibility Matrix
+compatibility:
+  models:
+    - name: "gpt-4"
+      min_version: "gpt-4-0125-preview"
+      tested_versions:
+        - "gpt-4-0125-preview"
+        - "gpt-4-turbo-2024-04-09"
+      eval_scores:
+        quality: 0.91
+        safety: 0.98
+        latency_p95_ms: 3200
+        
+    - name: "claude-3"
+      min_version: "claude-3-sonnet-20240229"
+      tested_versions:
+        - "claude-3-opus-20240229"
+        - "claude-3-sonnet-20240229"
+      eval_scores:
+        quality: 0.93
+        safety: 0.99
+        latency_p95_ms: 2800
+        
+    - name: "gemini-pro"
+      min_version: "gemini-1.5-pro"
+      tested_versions:
+        - "gemini-1.5-pro-latest"
+      eval_scores:
+        quality: 0.88
+        safety: 0.97
+        latency_p95_ms: 2400
+
+  features_required:
+    - function_calling
+    - json_mode
+    - system_messages
+    - long_context
+    
+  context_window:
+    minimum: 16384
+    recommended: 128000
+
+# Core Context Definition
+context:
+  # System-level instructions
+  system:
+    source: "./prompts/system.md"
+    variables:
+      project_name:
+        type: string
+        required: true
+        description: "Name of the project being tested"
+      project_type:
+        type: string
+        required: false
+        default: "web-application"
+        enum: ["web-application", "spa", "ssr", "static-site", "e-commerce", "dashboard"]
+        description: "Type of web application"
+      test_framework:
+        type: string
+        required: false
+        default: "playwright"
+        enum: ["playwright", "playwright-test"]
+        description: "Playwright test framework variant"
+      language:
+        type: string
+        required: false
+        default: "typescript"
+        enum: ["typescript", "javascript"]
+        description: "Programming language for tests"
+      base_url:
+        type: string
+        required: false
+        format: url
+        description: "Base URL of the application under test"
+      test_directory:
+        type: string
+        required: false
+        default: "tests/e2e"
+        description: "Directory where tests are stored"
+        
+  # Persona definitions
+  personas:
+    default: "technical"
+    available:
+      technical:
+        source: "./personas/technical.yaml"
+        description: "Precise, code-focused communication with technical details"
+      helpful:
+        source: "./personas/helpful.yaml"
+        description: "Friendly, educational approach explaining testing concepts"
+      concise:
+        source: "./personas/concise.yaml"
+        description: "Brief, direct responses focused on code output"
+
+  # Knowledge attachments
+  knowledge:
+    - name: "playwright_best_practices"
+      source: "./knowledge/best-practices.md"
+      type: static
+      description: "Playwright testing best practices and patterns"
+      
+    - name: "common_patterns"
+      source: "./knowledge/common-patterns.md"
+      type: static
+      description: "Common Playwright test patterns and examples"
+      
+    - name: "selectors_guide"
+      source: "./knowledge/selectors-guide.md"
+      type: static
+      description: "Best practices for writing reliable selectors"
+
+  # Behavioral guardrails
+  guardrails:
+    - name: "safety"
+      source: "./guardrails/safety.yaml"
+      priority: 100
+      description: "Core safety constraints for code generation"
+      
+    - name: "code_quality"
+      source: "./guardrails/code-quality.yaml"
+      priority: 90
+      description: "Code quality and best practice enforcement"
+      
+    - name: "security"
+      source: "./guardrails/security.yaml"
+      priority: 95
+      description: "Security considerations for test code"
+
+  # Tool/function definitions
+  tools:
+    - name: "read_file"
+      source: "./tools/read_file.yaml"
+      description: "Read and analyze source files from the project"
+      
+    - name: "analyze_project_structure"
+      source: "./tools/analyze_project_structure.yaml"
+      description: "Analyze the project directory structure to understand the codebase"
+      
+    - name: "search_codebase"
+      source: "./tools/search_codebase.yaml"
+      description: "Search the codebase for specific patterns, components, or functionality"
+      
+    - name: "check_existing_tests"
+      source: "./tools/check_existing_tests.yaml"
+      description: "Check for existing test files and patterns to maintain consistency"
+      
+    - name: "validate_test_code"
+      source: "./tools/validate_test_code.yaml"
+      description: "Validate generated test code for syntax and best practices"
+
+# Dependencies on other COP modules
+dependencies:
+  "code-analyzer": "^1.0.0"
+  "test-patterns": "^1.0.0"
+
+# Development dependencies
+dev_dependencies:
+  "cop-test-framework": "^1.0.0"
+  "mock-llm": "^0.5.0"
+  "eval-metrics": "^2.1.0"
+
+# Build Configuration
+build:
+  targets:
+    # OpenAI Custom GPT / Assistants API
+    openai:
+      format: assistant
+      optimize: true
+      include_knowledge: true
+      function_calling: true
+      
+    # Anthropic Claude
+    anthropic:
+      format: claude-config
+      optimize: true
+      xml_tags: true
+      
+    # Standalone Docker deployment
+    standalone:
+      format: docker
+      base_image: "cop-runtime:1.0"
+      expose_port: 8080
+      health_check: "/health"
+
+  preprocessing:
+    - minify_prompts: true
+    - resolve_imports: true
+    - validate_schemas: true
+    - optimize_token_usage: true
+    
+  postprocessing:
+    - generate_docs: true
+    - create_changelog: true
+
+# Evaluation Configuration
+evaluation:
+  framework: "cop-eval"
+  
+  test_suites:
+    - name: "behavioral"
+      path: "./tests/behavioral/"
+      type: llm-judged
+      judge_model: "gpt-4"
+      description: "Quality evaluation of generated test code"
+      
+    - name: "safety"
+      path: "./tests/safety/"
+      type: adversarial
+      description: "Security and safety tests for code generation"
+      
+    - name: "code_quality"
+      path: "./tests/code-quality/"
+      type: deterministic
+      description: "Deterministic code quality checks"
+
+  benchmarks:
+    - name: "test_quality"
+      metric: llm_judge_score
+      threshold: 0.88
+      weight: 0.35
+      
+    - name: "code_correctness"
+      metric: syntax_check_pass_rate
+      threshold: 0.95
+      weight: 0.25
+      
+    - name: "best_practices_adherence"
+      metric: pattern_compliance_score
+      threshold: 0.85
+      weight: 0.20
+      
+    - name: "safety_score"
+      metric: guardrail_pass_rate
+      threshold: 0.99
+      weight: 0.20
+
+# Runtime Configuration
+runtime:
+  # Model parameters
+  model_config:
+    temperature: 0.3
+    max_tokens: 4096
+    top_p: 0.95
+    frequency_penalty: 0.1
+    presence_penalty: 0.1
+    
+  # Retry and resilience
+  retry_policy:
+    max_retries: 3
+    backoff: exponential
+    initial_delay_ms: 1000
+    max_delay_ms: 10000
+    
+  # Fallback configuration
+  fallback:
+    enabled: true
+    trigger: "error_rate > 0.1 OR latency_p95 > 8000"
+    model: "gpt-3.5-turbo"
+    notify: true
+    
+  # Rate limiting
+  rate_limits:
+    requests_per_minute: 50
+    tokens_per_minute: 100000
+    
+  # Caching
+  cache:
+    enabled: true
+    ttl_seconds: 1800
+    similarity_threshold: 0.90
+
+# Observability
+observability:
+  logging:
+    level: info
+    include_prompts: false
+    include_responses: false
+    
+  metrics:
+    enabled: true
+    export_format: prometheus
+    
+  tracing:
+    enabled: true
+    sample_rate: 0.2
+    export_to: "otlp"

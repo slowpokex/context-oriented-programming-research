@@ -1,0 +1,136 @@
+# Tool Definition: Analyze Project Structure
+# Analyzes the project directory structure to understand the codebase organization
+
+name: analyze_project_structure
+description: "Analyze the project directory structure to understand how the codebase is organized"
+version: "1.0.0"
+
+# OpenAI Function Calling format
+openai_spec:
+  type: function
+  function:
+    name: analyze_project_structure
+    description: "Analyzes the project directory structure to understand the codebase organization, framework used, and where different types of files are located. Use this to understand the project layout before writing tests."
+    parameters:
+      type: object
+      properties:
+        root_path:
+          type: string
+          description: "Root directory to analyze (defaults to project root)"
+          default: "."
+        max_depth:
+          type: integer
+          description: "Maximum directory depth to traverse"
+          default: 4
+        include_patterns:
+          type: array
+          items:
+            type: string
+          description: "File patterns to include (e.g., ['*.tsx', '*.ts', '*.js'])"
+        exclude_patterns:
+          type: array
+          items:
+            type: string
+          description: "File patterns to exclude (e.g., ['node_modules', '*.test.ts'])"
+      required: []
+
+# Response schema
+response_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+    structure:
+      type: object
+      description: "Directory tree structure"
+    framework:
+      type: string
+      description: "Detected framework (React, Next.js, Vue, etc.)"
+    test_directory:
+      type: string
+      description: "Location of existing test files"
+    source_directory:
+      type: string
+      description: "Location of source code"
+    routes:
+      type: array
+      items:
+        type: string
+      description: "Detected route files or patterns"
+    components:
+      type: array
+      items:
+        type: string
+      description: "Detected component directories"
+    config_files:
+      type: array
+      items:
+        type: string
+      description: "Configuration files found"
+    error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+# Example usage
+examples:
+  - description: "Analyze full project structure"
+    input: {}
+    output:
+      success: true
+      framework: "Next.js"
+      test_directory: "tests/e2e"
+      source_directory: "app"
+      routes:
+        - "app/routes/login.tsx"
+        - "app/routes/dashboard.tsx"
+        - "app/routes/products.tsx"
+      components:
+        - "app/components"
+      config_files:
+        - "playwright.config.ts"
+        - "package.json"
+        - "tsconfig.json"
+      structure:
+        app:
+          - routes/
+          - components/
+          - lib/
+        tests:
+          - e2e/
+          - unit/
+        public: []
+
+  - description: "Analyze specific directory"
+    input:
+      root_path: "app/routes"
+      max_depth: 2
+    output:
+      success: true
+      structure:
+        routes:
+          - login.tsx
+          - dashboard.tsx
+          - products.tsx
+
+# Usage guidelines
+usage_guidelines:
+  - "Use this tool first to understand the project structure"
+  - "Helps identify where to place new test files"
+  - "Reveals framework-specific patterns (Next.js, Remix, etc.)"
+  - "Shows existing test organization"
+  - "Identifies component and route locations"
+
+# Security
+security:
+  - "Only analyze directories within the project"
+  - "Respect .gitignore patterns"
+  - "Don't traverse into node_modules or build directories"
+
+# Rate limiting
+rate_limits:
+  per_session: 10
+  per_minute: 2

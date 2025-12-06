@@ -1,0 +1,113 @@
+# Tool Definition: Check Existing Tests
+# Check for existing test files and patterns to maintain consistency
+
+name: check_existing_tests
+description: "Check for existing test files and patterns to maintain consistency with the project's testing approach"
+version: "1.0.0"
+
+# OpenAI Function Calling format
+openai_spec:
+  type: function
+  function:
+    name: check_existing_tests
+    description: "Finds and analyzes existing test files to understand test patterns, structure, and conventions used in the project. Use this to ensure new tests match the existing style."
+    parameters:
+      type: object
+      properties:
+        test_directory:
+          type: string
+          description: "Directory to search for tests (defaults to standard test directories)"
+          default: "tests"
+        pattern:
+          type: string
+          description: "Test file pattern to match (e.g., '*.spec.ts', '*.test.ts')"
+        analyze_structure:
+          type: boolean
+          description: "Whether to analyze test structure and patterns"
+          default: true
+      required: []
+
+# Response schema
+response_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+    test_files:
+      type: array
+      items:
+        type: string
+      description: "List of existing test files"
+    patterns:
+      type: object
+      description: "Detected test patterns and conventions"
+      properties:
+        file_naming:
+          type: string
+          description: "Naming convention (e.g., '*.spec.ts', '*.test.ts')"
+        structure:
+          type: string
+          description: "Test structure pattern (e.g., 'describe/it', 'test')"
+        fixtures:
+          type: array
+          items:
+            type: string
+          description: "Common fixtures used"
+        helpers:
+          type: array
+          items:
+            type: string
+          description: "Test helper functions"
+        page_objects:
+          type: boolean
+          description: "Whether Page Object Model is used"
+        example_test:
+          type: string
+          description: "Example test code snippet"
+    error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+# Example usage
+examples:
+  - description: "Check all existing tests"
+    input:
+      analyze_structure: true
+    output:
+      success: true
+      test_files:
+        - "tests/e2e/login.spec.ts"
+        - "tests/e2e/dashboard.spec.ts"
+        - "tests/e2e/products.spec.ts"
+      patterns:
+        file_naming: "*.spec.ts"
+        structure: "test.describe() and test()"
+        fixtures:
+          - "authenticatedPage"
+          - "testUser"
+        helpers:
+          - "helpers/auth.ts"
+          - "helpers/selectors.ts"
+        page_objects: true
+        example_test: "test.describe('Login', () => {\n  test('should log in successfully', async ({ page }) => {\n    // ...\n  });\n});"
+
+# Usage guidelines
+usage_guidelines:
+  - "Use before generating new tests to match existing patterns"
+  - "Helps maintain consistency across test suite"
+  - "Identifies reusable fixtures and helpers"
+  - "Shows Page Object Model usage if applicable"
+
+# Security
+security:
+  - "Only read test files within project"
+  - "Respect .gitignore patterns"
+
+# Rate limiting
+rate_limits:
+  per_session: 10
+  per_minute: 2
