@@ -1,0 +1,30 @@
+# Invalid Persona - For Testing Schema Validation
+# This file intentionally contains errors to demonstrate validation
+
+# ERROR: Missing required 'name' field
+# name: "test-persona"
+
+description: 12345          # INVALID - should be string, not number
+
+# ERROR: Invalid tone values
+tone:
+  formality: "super_high"   # INVALID - not in enum (should be low/medium/high)
+  warmth: 123               # INVALID - should be string, not number
+
+# ERROR: Invalid communication_style values
+communication_style:
+  greeting: 42              # INVALID - should be string
+  use_contractions: "yes"   # INVALID - should be boolean
+  use_emoji: "sometimes"    # INVALID - should be boolean
+
+# ERROR: Invalid vocabulary structure
+vocabulary:
+  preferred: "just a string" # INVALID - should be array
+  avoid: 
+    - 12345                   # INVALID - items should be strings
+
+# ERROR: Invalid example_exchanges
+example_exchanges:
+  - wrong_key: "value"       # INVALID - missing required 'response'
+  - customer: 123            # INVALID - should be string
+    response: true           # INVALID - should be string

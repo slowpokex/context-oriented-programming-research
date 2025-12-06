@@ -1,0 +1,32 @@
+# Invalid Guardrail - For Testing Schema Validation
+# This file intentionally contains errors to demonstrate validation
+
+name: "123-invalid"         # INVALID - must start with lowercase letter
+# priority: 50              # MISSING - required field
+
+# ERROR: Invalid hard_constraints
+hard_constraints:
+  - # name: "missing"       # MISSING - required field
+    rules: "not an array"   # INVALID - should be array
+    
+  - name: ""                # INVALID - empty string (minLength: 1)
+    rules: []               # INVALID - empty array (minItems: 1)
+
+# ERROR: Invalid soft_constraints
+soft_constraints:
+  - name: "test"
+    behavior: "teleport"    # INVALID - not in allowed enum
+    rules:
+      - 123                 # INVALID - should be string
+
+# ERROR: Invalid violation_responses
+violation_responses:
+  test_constraint:
+    response: 12345         # INVALID - should be string
+    escalate: "yes"         # INVALID - should be boolean
+    log_level: "maximum"    # INVALID - not in enum
+
+# ERROR: Invalid monitoring config
+monitoring:
+  alert_threshold: -5       # INVALID - should be positive (minimum: 1)
+  sample_rate: 150          # INVALID - should be 0-1

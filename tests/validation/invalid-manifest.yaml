@@ -1,0 +1,66 @@
+# Invalid COP Manifest - For Testing Schema Validation
+# This file intentionally contains errors to demonstrate validation
+
+# ERROR: 'meta' is required but missing the 'name' field
+meta:
+  # name: "test-package"  # MISSING - should cause error
+  version: "1.0"          # INVALID - should be x.y.z format
+
+# ERROR: Invalid compatibility configuration
+compatibility:
+  models:
+    - name: 123           # INVALID - should be string, not number
+      min_version: "1.0"
+      eval_scores:
+        quality: 2.5      # INVALID - should be between 0 and 1
+        safety: "high"    # INVALID - should be number, not string
+  
+  features_required:
+    - "magic_powers"      # INVALID - not in allowed enum
+  
+  context_window:
+    minimum: -100         # INVALID - should be positive
+
+# ERROR: Missing required 'source' in system
+context:
+  system:
+    # source: "./prompts/system.md"  # MISSING - required field
+    variables:
+      name:
+        type: "invalid_type"  # INVALID - not a valid type
+
+  personas:
+    default: "nonexistent"
+    available:
+      test:
+        # source: "./personas/test.yaml"  # MISSING - required field
+        description: "Test persona"
+
+  guardrails:
+    - name: "test"
+      source: "./guardrails/test.yaml"
+      priority: 150         # INVALID - should be 0-100
+      
+  tools:
+    - name: "test"
+      # source: missing     # MISSING - required field
+      description: "Test tool"
+
+# ERROR: Invalid runtime configuration
+runtime:
+  model_config:
+    temperature: 5.0        # INVALID - should be 0-2
+    max_tokens: -100        # INVALID - should be positive
+    top_p: 2.0              # INVALID - should be 0-1
+  
+  retry_policy:
+    max_retries: 100        # INVALID - should be 0-10
+    backoff: "random"       # INVALID - not in enum
+
+# ERROR: Invalid observability config
+observability:
+  logging:
+    level: "extreme"        # INVALID - not in enum
+  
+  tracing:
+    sample_rate: 5.0        # INVALID - should be 0-1

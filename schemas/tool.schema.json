@@ -1,0 +1,255 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cop.dev/schema/tool-v1.json",
+  "title": "COP Tool Definition",
+  "description": "Schema for Context-Oriented Programming tool definition files",
+  "type": "object",
+  "required": ["name", "description", "openai_spec"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Tool identifier",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the tool"
+    },
+    "version": {
+      "type": "string",
+      "description": "Tool version (semantic versioning)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-z0-9.]+)?$"
+    },
+    "openai_spec": {
+      "$ref": "#/definitions/OpenAIFunctionSpec"
+    },
+    "response_schema": {
+      "$ref": "#/definitions/JSONSchema"
+    },
+    "examples": {
+      "type": "array",
+      "description": "Example inputs and outputs",
+      "items": {
+        "$ref": "#/definitions/Example"
+      }
+    },
+    "security": {
+      "type": "array",
+      "description": "Security and privacy rules",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rate_limits": {
+      "$ref": "#/definitions/RateLimits"
+    },
+    "constraints": {
+      "$ref": "#/definitions/Constraints"
+    },
+    "definitions": {
+      "type": "object",
+      "description": "Reusable schema definitions",
+      "additionalProperties": {
+        "$ref": "#/definitions/JSONSchema"
+      }
+    }
+  },
+  "definitions": {
+    "OpenAIFunctionSpec": {
+      "type": "object",
+      "description": "OpenAI function calling specification",
+      "required": ["type", "function"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "function"
+        },
+        "function": {
+          "$ref": "#/definitions/FunctionDefinition"
+        }
+      }
+    },
+    "FunctionDefinition": {
+      "type": "object",
+      "description": "Function definition",
+      "required": ["name", "description", "parameters"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Function name",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "description": {
+          "type": "string",
+          "description": "Function description for the LLM"
+        },
+        "parameters": {
+          "$ref": "#/definitions/JSONSchema"
+        }
+      }
+    },
+    "JSONSchema": {
+      "type": "object",
+      "description": "JSON Schema definition",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["object", "array", "string", "number", "integer", "boolean", "null"]
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/JSONSchema"
+          }
+        },
+        "items": {
+          "$ref": "#/definitions/JSONSchema"
+        },
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "oneOf": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JSONSchema"
+          }
+        },
+        "anyOf": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JSONSchema"
+          }
+        },
+        "allOf": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JSONSchema"
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "default": {},
+        "enum": {
+          "type": "array"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minItems": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxItems": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "$ref": {
+          "type": "string"
+        }
+      }
+    },
+    "Example": {
+      "type": "object",
+      "description": "Example input/output pair",
+      "required": ["input", "output"],
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "input": {
+          "type": "object"
+        },
+        "output": {
+          "type": "object"
+        }
+      }
+    },
+    "RateLimits": {
+      "type": "object",
+      "description": "Rate limiting configuration",
+      "additionalProperties": false,
+      "properties": {
+        "per_session": {
+          "type": "integer",
+          "description": "Maximum calls per session",
+          "minimum": 1
+        },
+        "per_minute": {
+          "type": "integer",
+          "description": "Maximum calls per minute",
+          "minimum": 1
+        },
+        "per_hour": {
+          "type": "integer",
+          "description": "Maximum calls per hour",
+          "minimum": 1
+        },
+        "per_day": {
+          "type": "integer",
+          "description": "Maximum calls per day",
+          "minimum": 1
+        }
+      }
+    },
+    "Constraints": {
+      "type": "object",
+      "description": "Usage constraints",
+      "additionalProperties": false,
+      "properties": {
+        "rate_limit": {
+          "type": "integer",
+          "description": "Calls per session",
+          "minimum": 1
+        },
+        "requires_auth": {
+          "type": "boolean",
+          "description": "Whether authentication is required"
+        },
+        "cost_tier": {
+          "type": "string",
+          "enum": ["free", "low", "medium", "high"],
+          "description": "Cost tier for this tool"
+        },
+        "requires_approval": {
+          "type": "boolean",
+          "description": "Whether human approval is required"
+        },
+        "allowed_roles": {
+          "type": "array",
+          "description": "Roles that can use this tool",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

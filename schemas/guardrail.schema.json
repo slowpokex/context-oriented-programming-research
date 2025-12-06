@@ -1,0 +1,197 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cop.dev/schema/guardrail-v1.json",
+  "title": "COP Guardrail Configuration",
+  "description": "Schema for Context-Oriented Programming guardrail definition files",
+  "type": "object",
+  "required": ["name", "priority"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Guardrail identifier",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_-]*$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the guardrail",
+      "maxLength": 512
+    },
+    "priority": {
+      "type": "integer",
+      "description": "Execution priority (0-100, higher = first)",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "hard_constraints": {
+      "type": "array",
+      "description": "Constraints that must never be violated",
+      "items": {
+        "$ref": "#/definitions/Constraint"
+      }
+    },
+    "soft_constraints": {
+      "type": "array",
+      "description": "Constraints that are preferred but flexible",
+      "items": {
+        "$ref": "#/definitions/SoftConstraint"
+      }
+    },
+    "violation_responses": {
+      "type": "object",
+      "description": "Response templates for constraint violations",
+      "additionalProperties": {
+        "$ref": "#/definitions/ViolationResponse"
+      }
+    },
+    "monitoring": {
+      "$ref": "#/definitions/Monitoring"
+    }
+  },
+  "definitions": {
+    "Constraint": {
+      "type": "object",
+      "description": "A hard constraint definition",
+      "required": ["name", "rules"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Constraint identifier",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "description": "What this constraint prevents or enforces"
+        },
+        "rules": {
+          "type": "array",
+          "description": "List of rules for this constraint",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "trigger_phrases": {
+          "type": "array",
+          "description": "Phrases that may trigger this constraint",
+          "items": {
+            "type": "string"
+          }
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Severity level of the constraint"
+        },
+        "applies_to": {
+          "type": "array",
+          "description": "Specific contexts where this applies",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "SoftConstraint": {
+      "type": "object",
+      "description": "A soft constraint definition",
+      "required": ["name", "rules"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Constraint identifier",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "description": "What this constraint encourages"
+        },
+        "behavior": {
+          "type": "string",
+          "description": "How to handle violations",
+          "enum": ["gentle_redirect", "neutral_response", "deflect", "acknowledge", "ignore", "recommend", "warn", "suggest", "enforce"]
+        },
+        "rules": {
+          "type": "array",
+          "description": "List of rules for this constraint",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "flexibility": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "How flexible this constraint is"
+        }
+      }
+    },
+    "ViolationResponse": {
+      "type": "object",
+      "description": "Response configuration for a violation",
+      "additionalProperties": false,
+      "properties": {
+        "response": {
+          "type": "string",
+          "description": "Template response when this constraint is violated"
+        },
+        "escalate": {
+          "type": "boolean",
+          "description": "Whether to escalate on violation"
+        },
+        "log_level": {
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"],
+          "description": "Log level for this violation"
+        },
+        "notify": {
+          "type": "boolean",
+          "description": "Whether to send notifications"
+        },
+        "block_response": {
+          "type": "boolean",
+          "description": "Whether to block the response entirely"
+        }
+      }
+    },
+    "Monitoring": {
+      "type": "object",
+      "description": "Monitoring configuration for guardrail violations",
+      "additionalProperties": true,
+      "properties": {
+        "log_violations": {
+          "type": "boolean",
+          "description": "Whether to log all violations"
+        },
+        "alert_threshold": {
+          "type": "integer",
+          "description": "Number of violations before alerting",
+          "minimum": 1
+        },
+        "escalate_on": {
+          "type": "array",
+          "description": "Constraint names that trigger escalation",
+          "items": {
+            "type": "string"
+          }
+        },
+        "metrics_enabled": {
+          "type": "boolean",
+          "description": "Whether to collect metrics"
+        },
+        "sample_rate": {
+          "type": "number",
+          "description": "Sampling rate for logging (0-1)",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  }
+}

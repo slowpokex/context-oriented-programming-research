@@ -1,0 +1,34 @@
+# Invalid Tool - For Testing Schema Validation
+# This file intentionally contains errors to demonstrate validation
+
+# name: "missing_name"      # MISSING - required field
+description: 12345          # INVALID - should be string
+
+version: "not-semver"       # INVALID - should be semantic version
+
+# ERROR: Invalid openai_spec
+openai_spec:
+  type: "not_function"      # INVALID - should be "function"
+  function:
+    # name: "missing"       # MISSING - required field
+    description: []         # INVALID - should be string
+    parameters:
+      type: "invalid"       # INVALID - not a valid JSON Schema type
+      properties:
+        test:
+          type: 123         # INVALID - should be string
+
+# ERROR: Invalid rate_limits
+rate_limits:
+  per_session: -10          # INVALID - should be positive (minimum: 1)
+  per_minute: 0             # INVALID - should be positive (minimum: 1)
+
+# ERROR: Invalid constraints
+constraints:
+  cost_tier: "astronomical" # INVALID - not in enum
+  rate_limit: "many"        # INVALID - should be integer
+
+# ERROR: Invalid examples
+examples:
+  - input: "not an object"  # INVALID - should be object
+    output: 12345           # INVALID - should be object

@@ -1,0 +1,32 @@
+# Invalid Test Suite - For Testing Schema Validation
+# This file intentionally contains errors to demonstrate validation
+
+# name: "missing-name"      # MISSING - required field
+type: "magic-test"          # INVALID - not in allowed enum
+
+judge_temperature: 5.0      # INVALID - should be 0-2
+
+# ERROR: Invalid evaluation_criteria
+evaluation_criteria:
+  helpfulness:
+    weight: 2.5             # INVALID - should be 0-1
+    # description: missing  # Technically optional but weight/rubric required
+    rubric:
+      "10": "Invalid key"   # INVALID - keys should be 1-5
+
+# ERROR: Invalid test_cases
+test_cases:
+  - # id: "missing"         # MISSING - required field
+    # name: "missing"       # MISSING - required field
+    # input: {}             # MISSING - required field
+    
+  - id: "123-invalid"       # INVALID - must start with lowercase letter
+    name: 123               # INVALID - should be string
+    input: "not-object"     # INVALID - should be object
+    expected_behaviors: "string"  # INVALID - should be array
+    minimum_scores:
+      helpfulness: 10       # INVALID - should be 1-5
+
+passing_threshold: 2.0      # INVALID - should be 0-1
+aggregate_minimum: 10       # INVALID - should be 0-5
+timeout_seconds: -30        # INVALID - should be positive (minimum: 1)
