@@ -1,0 +1,120 @@
+# Tool Definition: Search Codebase
+# Search the codebase for specific patterns, components, or functionality
+
+name: search_codebase
+description: "Search the codebase for specific patterns, components, or functionality to understand how features are implemented"
+version: "1.0.0"
+
+# OpenAI Function Calling format
+openai_spec:
+  type: function
+  function:
+    name: search_codebase
+    description: "Searches the codebase for specific patterns, function names, component names, API endpoints, or text content. Use this to find related code when writing tests."
+    parameters:
+      type: object
+      properties:
+        query:
+          type: string
+          description: "Search query - can be a function name, component name, text pattern, or regex"
+        search_type:
+          type: string
+          enum: ["text", "function", "component", "route", "api"]
+          description: "Type of search to perform"
+          default: "text"
+        file_patterns:
+          type: array
+          items:
+            type: string
+          description: "File patterns to search in (e.g., ['*.tsx', '*.ts'])"
+        case_sensitive:
+          type: boolean
+          description: "Whether search is case sensitive"
+          default: false
+        max_results:
+          type: integer
+          description: "Maximum number of results to return"
+          default: 20
+      required: ["query"]
+
+# Response schema
+response_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+    results:
+      type: array
+      items:
+        type: object
+        properties:
+          file_path:
+            type: string
+          line_number:
+            type: integer
+          match:
+            type: string
+          context:
+            type: string
+            description: "Surrounding code context"
+    total_matches:
+      type: integer
+    error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+# Example usage
+examples:
+  - description: "Search for login function"
+    input:
+      query: "handleLogin"
+      search_type: "function"
+    output:
+      success: true
+      total_matches: 3
+      results:
+        - file_path: "app/routes/login.tsx"
+          line_number: 45
+          match: "async function handleLogin"
+          context: "export async function handleLogin(formData: FormData) {\n  const email = formData.get('email');\n  // ..."
+        - file_path: "app/lib/auth.ts"
+          line_number: 12
+          match: "handleLogin"
+          context: "// ..."
+
+  - description: "Search for component usage"
+    input:
+      query: "LoginForm"
+      search_type: "component"
+      file_patterns: ["*.tsx"]
+    output:
+      success: true
+      total_matches: 5
+      results:
+        - file_path: "app/routes/login.tsx"
+          line_number: 10
+          match: "<LoginForm />"
+          context: "export default function LoginPage() {\n  return <LoginForm />;\n}"
+
+# Usage guidelines
+usage_guidelines:
+  - "Use to find where components are used"
+  - "Find API endpoint definitions"
+  - "Locate related functionality"
+  - "Understand data flow and dependencies"
+  - "Find existing test patterns"
+
+# Security
+security:
+  - "Only search within project directory"
+  - "Respect .gitignore patterns"
+  - "Don't search in node_modules or build directories"
+
+# Rate limiting
+rate_limits:
+  per_session: 30
+  per_minute: 5

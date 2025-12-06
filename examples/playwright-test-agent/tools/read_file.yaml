@@ -1,0 +1,116 @@
+# Tool Definition: Read File
+# Allows the agent to read and analyze source files from the project
+
+name: read_file
+description: "Read and analyze source files from the project to understand code structure and functionality"
+version: "1.0.0"
+
+# OpenAI Function Calling format
+openai_spec:
+  type: function
+  function:
+    name: read_file
+    description: "Reads a file from the project and returns its contents. Use this to understand component structure, API endpoints, routing, and other code that needs to be tested."
+    parameters:
+      type: object
+      properties:
+        file_path:
+          type: string
+          description: "Relative path to the file from the project root (e.g., 'src/components/LoginForm.tsx' or 'app/routes/dashboard.tsx')"
+        max_lines:
+          type: integer
+          description: "Maximum number of lines to read (for large files). If not specified, reads the entire file."
+          default: 1000
+        include_metadata:
+          type: boolean
+          description: "Whether to include file metadata (size, last modified, etc.)"
+          default: false
+      required: ["file_path"]
+
+# Response schema
+response_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+    file_path:
+      type: string
+    content:
+      type: string
+      description: "File contents"
+    language:
+      type: string
+      description: "Detected programming language"
+    metadata:
+      type: object
+      properties:
+        size:
+          type: integer
+        lines:
+          type: integer
+        last_modified:
+          type: string
+          format: date-time
+    error:
+      type: object
+      properties:
+        code:
+          type: string
+          enum: ["FILE_NOT_FOUND", "PERMISSION_DENIED", "FILE_TOO_LARGE", "INVALID_PATH"]
+        message:
+          type: string
+
+# Example usage
+examples:
+  - description: "Read a React component file"
+    input:
+      file_path: "src/components/LoginForm.tsx"
+    output:
+      success: true
+      file_path: "src/components/LoginForm.tsx"
+      content: "import React, { useState } from 'react';\n\nexport const LoginForm = () => {\n  const [email, setEmail] = useState('');\n  // ... component code\n}"
+      language: "typescript"
+      metadata:
+        size: 2048
+        lines: 85
+        last_modified: "2024-01-15T10:30:00Z"
+
+  - description: "Read a route file"
+    input:
+      file_path: "app/routes/dashboard.tsx"
+      max_lines: 500
+    output:
+      success: true
+      file_path: "app/routes/dashboard.tsx"
+      content: "// First 500 lines of the file..."
+      language: "typescript"
+
+  - description: "File not found"
+    input:
+      file_path: "src/nonexistent.tsx"
+    output:
+      success: false
+      error:
+        code: "FILE_NOT_FOUND"
+        message: "File not found: src/nonexistent.tsx"
+
+# Usage guidelines
+usage_guidelines:
+  - "Use this tool to understand component structure before writing tests"
+  - "Read route files to understand application navigation"
+  - "Read API files to understand endpoints and request/response formats"
+  - "Read existing test files to understand test patterns and conventions"
+  - "For large files, use max_lines to read relevant sections"
+  - "Read configuration files to understand test setup requirements"
+
+# Security and privacy rules
+security:
+  - "Only read files within the project directory"
+  - "Never read files outside the workspace (../.. paths)"
+  - "Respect .gitignore and .copignore patterns"
+  - "Log file access for audit purposes"
+
+# Rate limiting
+rate_limits:
+  per_session: 50
+  per_minute: 10

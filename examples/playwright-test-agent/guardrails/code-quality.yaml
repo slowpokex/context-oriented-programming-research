@@ -1,0 +1,117 @@
+# Code Quality Guardrails Configuration
+# Enforces best practices and code quality standards
+
+name: code_quality
+description: "Code quality and best practice enforcement for test code"
+priority: 90
+
+# Hard constraints - enforce best practices
+hard_constraints:
+  
+  - name: "proper_test_structure"
+    description: "Tests must follow proper structure and organization"
+    rules:
+      - "Use test.describe() for logical grouping"
+      - "Test names must be descriptive and indicate what is being tested"
+      - "Follow Arrange-Act-Assert pattern"
+      - "One assertion per test concept (can have multiple related assertions)"
+    
+  - name: "reliable_selectors"
+    description: "Use stable, semantic selectors"
+    rules:
+      - "Prefer getByRole(), getByText(), getByLabel() over CSS selectors"
+      - "Avoid brittle selectors (CSS classes, complex XPath)"
+      - "Use data-testid when semantic selectors aren't available"
+      - "Document selector choices when non-standard"
+    
+  - name: "proper_waiting"
+    description: "Use Playwright's auto-waiting, avoid unnecessary waits"
+    rules:
+      - "Don't add arbitrary timeouts (sleep, wait(5000))"
+      - "Use page.waitForResponse() for network requests"
+      - "Use page.waitForLoadState() when appropriate"
+      - "Leverage Playwright's built-in auto-waiting"
+    
+  - name: "meaningful_assertions"
+    description: "Use explicit, meaningful assertions"
+    rules:
+      - "Use expect() with descriptive matchers"
+      - "Avoid implicit assertions"
+      - "Include helpful error messages in assertions"
+      - "Assert the actual behavior, not implementation details"
+
+# Soft constraints - recommendations
+soft_constraints:
+  
+  - name: "page_object_model"
+    description: "Use Page Object Model for complex applications"
+    behavior: "recommend"
+    rules:
+      - "Extract page interactions into page objects"
+      - "Keep page objects focused and cohesive"
+      - "Reuse page objects across tests"
+    
+  - name: "test_data_management"
+    description: "Manage test data effectively"
+    behavior: "recommend"
+    rules:
+      - "Use fixtures for shared test data"
+      - "Generate unique test data to avoid conflicts"
+      - "Clean up test data after tests"
+      - "Use factories or builders for complex test data"
+    
+  - name: "error_handling"
+    description: "Handle errors and edge cases appropriately"
+    behavior: "recommend"
+    rules:
+      - "Test error cases, not just happy paths"
+      - "Handle expected errors gracefully"
+      - "Use test.slow() for tests that legitimately take time"
+      - "Mark flaky tests with test.fixme() until resolved"
+    
+  - name: "code_organization"
+    description: "Organize test code for maintainability"
+    behavior: "recommend"
+    rules:
+      - "Group related tests in describe blocks"
+      - "Extract reusable utilities and helpers"
+      - "Keep test files focused and not too large"
+      - "Use consistent naming conventions"
+
+# Quality checks
+quality_checks:
+  - name: "syntax_validation"
+    description: "Generated code must be syntactically valid"
+    required: true
+    
+  - name: "import_statements"
+    description: "Use proper import statements"
+    required: true
+    
+  - name: "type_safety"
+    description: "Use TypeScript types when language is TypeScript"
+    required: false
+    recommendation: true
+
+# Response handling
+violation_responses:
+  
+  poor_structure:
+    response: "I've restructured the test to follow best practices: {improvements}. This makes the test more maintainable and easier to understand."
+    
+  brittle_selector:
+    response: "I've updated the selector to use {better_selector} instead of {old_selector}. This is more stable because {reason}."
+    
+  unnecessary_wait:
+    response: "I've removed the arbitrary wait. Playwright's auto-waiting handles this automatically. If you need to wait for something specific, use {appropriate_wait_method}."
+    
+  weak_assertion:
+    response: "I've strengthened the assertion to {better_assertion}. This more clearly verifies the expected behavior."
+
+monitoring:
+  log_violations: true
+  alert_threshold: 5  # Alert after multiple quality issues
+  track_metrics:
+    - "selector_quality_score"
+    - "test_structure_score"
+    - "assertion_quality_score"

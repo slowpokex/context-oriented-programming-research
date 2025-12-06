@@ -1,0 +1,120 @@
+# Tool Definition: Validate Test Code
+# Validate generated test code for syntax and best practices
+
+name: validate_test_code
+description: "Validate generated test code for syntax errors, best practices, and Playwright-specific requirements"
+version: "1.0.0"
+
+# OpenAI Function Calling format
+openai_spec:
+  type: function
+  function:
+    name: validate_test_code
+    description: "Validates generated test code for syntax errors, TypeScript type errors, Playwright best practices, and common issues. Use this to ensure the generated code is correct before presenting it to the user."
+    parameters:
+      type: object
+      properties:
+        code:
+          type: string
+          description: "The test code to validate"
+        language:
+          type: string
+          enum: ["typescript", "javascript"]
+          description: "Programming language"
+          default: "typescript"
+        check_types:
+          type: boolean
+          description: "Whether to check TypeScript types"
+          default: true
+        check_best_practices:
+          type: boolean
+          description: "Whether to check Playwright best practices"
+          default: true
+      required: ["code"]
+
+# Response schema
+response_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+    valid:
+      type: boolean
+    errors:
+      type: array
+      items:
+        type: object
+        properties:
+          type:
+            type: string
+            enum: ["syntax", "type", "best_practice", "warning"]
+          message:
+            type: string
+          line:
+            type: integer
+          column:
+            type: integer
+          suggestion:
+            type: string
+    warnings:
+      type: array
+      items:
+        type: object
+        properties:
+          message:
+            type: string
+          suggestion:
+            type: string
+    score:
+      type: number
+      description: "Quality score (0-1)"
+
+# Example usage
+examples:
+  - description: "Validate test code"
+    input:
+      code: "import { test, expect } from '@playwright/test';\n\ntest('login', async ({ page }) => {\n  await page.goto('/login');\n  await page.getByLabel('Email').fill('test@example.com');\n  await page.getByRole('button', { name: 'Sign in' }).click();\n  await expect(page).toHaveURL(/dashboard/);\n});"
+      language: "typescript"
+    output:
+      success: true
+      valid: true
+      errors: []
+      warnings:
+        - message: "Test name could be more descriptive"
+          suggestion: "Consider: 'should successfully log in with valid credentials'"
+      score: 0.85
+
+  - description: "Code with errors"
+    input:
+      code: "test('login', async ({ page }) => {\n  await page.goto('/login');\n  await page.click('.login-button'); // Brittle selector\n  await page.waitForTimeout(5000); // Unnecessary wait\n});"
+    output:
+      success: true
+      valid: false
+      errors:
+        - type: "best_practice"
+          message: "Using CSS selector '.login-button' is brittle"
+          line: 3
+          suggestion: "Use getByRole('button', { name: 'Sign in' }) instead"
+        - type: "best_practice"
+          message: "Unnecessary waitForTimeout"
+          line: 4
+          suggestion: "Remove waitForTimeout, use Playwright's auto-waiting"
+      score: 0.60
+
+# Usage guidelines
+usage_guidelines:
+  - "Use after generating test code"
+  - "Catches syntax errors before code is used"
+  - "Identifies best practice violations"
+  - "Provides suggestions for improvement"
+
+# Security
+security:
+  - "Only validate code, never execute it"
+  - "Don't access file system during validation"
+  - "Validate in isolated context"
+
+# Rate limiting
+rate_limits:
+  per_session: 50
+  per_minute: 10

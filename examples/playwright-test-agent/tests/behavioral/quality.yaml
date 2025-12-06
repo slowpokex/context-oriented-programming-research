@@ -1,0 +1,207 @@
+# Behavioral Quality Tests
+# These tests evaluate the quality of generated Playwright test code using LLM-as-judge
+
+name: quality_tests
+type: llm-judged
+judge_model: gpt-4
+judge_temperature: 0.0
+
+evaluation_criteria:
+  code_quality:
+    weight: 0.30
+    description: "Is the generated code well-structured, readable, and maintainable?"
+    rubric:
+      5: "Excellent structure, clear organization, follows best practices perfectly"
+      4: "Good structure with minor improvements possible"
+      3: "Adequate structure but could be better organized"
+      2: "Poor structure, hard to follow"
+      1: "Very poor structure, confusing or incorrect"
+      
+  correctness:
+    weight: 0.35
+    description: "Is the test code syntactically correct and logically sound?"
+    rubric:
+      5: "Completely correct, will run without errors, tests the right thing"
+      4: "Mostly correct with minor issues"
+      3: "Generally correct but has some errors or logical issues"
+      2: "Multiple errors or significant logical problems"
+      1: "Fundamentally incorrect or won't run"
+      
+  best_practices:
+    weight: 0.25
+    description: "Does the code follow Playwright best practices?"
+    rubric:
+      5: "Follows all best practices: proper selectors, waiting, assertions, structure"
+      4: "Follows most best practices with minor deviations"
+      3: "Follows some best practices but misses important ones"
+      2: "Few best practices followed"
+      1: "Violates best practices significantly"
+      
+  selector_quality:
+    weight: 0.10
+    description: "Are the selectors stable, semantic, and maintainable?"
+    rubric:
+      5: "Uses semantic selectors (getByRole, getByLabel) exclusively"
+      4: "Mostly semantic selectors with minimal CSS/XPath"
+      3: "Mix of semantic and CSS selectors"
+      2: "Primarily CSS/XPath selectors"
+      1: "Brittle selectors that will break easily"
+
+test_cases:
+  - id: "simple_login_test"
+    name: "Generate simple login test"
+    input:
+      user_request: "Write a test for the login form that fills in email and password, clicks submit, and verifies redirect to dashboard"
+      project_context:
+        framework: "Next.js"
+        language: "typescript"
+        base_url: "https://example.com"
+    expected_behaviors:
+      - "Uses getByLabel() for form inputs"
+      - "Uses getByRole() for the submit button"
+      - "Includes proper navigation assertion"
+      - "Follows Arrange-Act-Assert pattern"
+      - "Uses descriptive test name"
+    minimum_scores:
+      code_quality: 4
+      correctness: 5
+      best_practices: 4
+      selector_quality: 5
+
+  - id: "form_validation_test"
+    name: "Generate form validation test"
+    input:
+      user_request: "Write a test that submits an empty form and verifies validation error messages appear"
+      project_context:
+        framework: "React"
+        language: "typescript"
+    expected_behaviors:
+      - "Tests error state, not just happy path"
+      - "Uses getByText() or getByRole() for error messages"
+      - "Verifies multiple validation errors if applicable"
+      - "Clear test name indicating it tests validation"
+    minimum_scores:
+      code_quality: 4
+      correctness: 5
+      best_practices: 4
+      selector_quality: 4
+
+  - id: "async_operation_test"
+    name: "Generate test with async operations"
+    input:
+      user_request: "Write a test that waits for an API call to complete before asserting"
+      project_context:
+        framework: "Next.js"
+        language: "typescript"
+    expected_behaviors:
+      - "Uses page.waitForResponse() for API calls"
+      - "Doesn't use arbitrary waitForTimeout()"
+      - "Properly waits for async operations"
+      - "Asserts after operation completes"
+    minimum_scores:
+      code_quality: 4
+      correctness: 5
+      best_practices: 5
+      selector_quality: 4
+
+  - id: "complex_interaction_test"
+    name: "Generate test with complex user interaction"
+    input:
+      user_request: "Write a test that navigates to a product page, adds item to cart, opens cart modal, and verifies item count"
+      project_context:
+        framework: "React"
+        language: "typescript"
+    expected_behaviors:
+      - "Tests complete user flow"
+      - "Uses proper selectors for each step"
+      - "Waits for modals/dialogs appropriately"
+      - "Clear assertions at each step"
+      - "Well-organized with describe blocks if needed"
+    minimum_scores:
+      code_quality: 4
+      correctness: 4
+      best_practices: 4
+      selector_quality: 4
+
+  - id: "page_object_pattern"
+    name: "Generate test using Page Object Model"
+    input:
+      user_request: "Write a test using Page Object Model for the login page"
+      project_context:
+        framework: "Next.js"
+        language: "typescript"
+        existing_patterns:
+          page_objects: true
+    expected_behaviors:
+      - "Creates or uses Page Object class"
+      - "Extracts page interactions into methods"
+      - "Test uses Page Object methods"
+      - "Page Object is reusable and well-structured"
+    minimum_scores:
+      code_quality: 5
+      correctness: 4
+      best_practices: 5
+      selector_quality: 4
+
+  - id: "test_with_fixtures"
+    name: "Generate test using fixtures"
+    input:
+      user_request: "Write a test that uses a test user fixture for authentication"
+      project_context:
+        framework: "Next.js"
+        language: "typescript"
+        existing_patterns:
+          fixtures: ["testUser", "authenticatedPage"]
+    expected_behaviors:
+      - "Uses existing fixtures appropriately"
+      - "Fixture usage matches project patterns"
+      - "Test is clean and uses fixture data"
+    minimum_scores:
+      code_quality: 4
+      correctness: 5
+      best_practices: 4
+      selector_quality: 4
+
+  - id: "error_handling_test"
+    name: "Generate test for error scenarios"
+    input:
+      user_request: "Write a test that verifies error message appears when login fails"
+      project_context:
+        framework: "React"
+        language: "typescript"
+    expected_behaviors:
+      - "Tests error/edge case, not just happy path"
+      - "Uses appropriate selectors for error messages"
+      - "Clear test name indicating error scenario"
+      - "Properly handles error state"
+    minimum_scores:
+      code_quality: 4
+      correctness: 5
+      best_practices: 4
+      selector_quality: 4
+
+  - id: "maintains_consistency"
+    name: "Maintains consistency with existing tests"
+    input:
+      user_request: "Write a test for the checkout flow"
+      project_context:
+        framework: "Next.js"
+        language: "typescript"
+        existing_tests:
+          - file: "tests/e2e/login.spec.ts"
+            pattern: "test.describe() with test() functions"
+            selectors: "getByRole and getByLabel"
+            structure: "Arrange-Act-Assert"
+    expected_behaviors:
+      - "Matches existing test structure"
+      - "Uses same selector patterns"
+      - "Follows same naming conventions"
+      - "Consistent with project style"
+    minimum_scores:
+      code_quality: 5
+      correctness: 4
+      best_practices: 4
+      selector_quality: 4
+
+passing_threshold: 0.85  # 85% of tests must pass
+aggregate_minimum: 4.0   # Average score across all criteria must be >= 4.0

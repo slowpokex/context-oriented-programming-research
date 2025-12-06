@@ -1,0 +1,94 @@
+# Security Guardrails Configuration
+# Security considerations for test code
+
+name: security
+description: "Security guardrails to prevent vulnerabilities in test code"
+priority: 95
+
+# Hard constraints - security must-haves
+hard_constraints:
+  
+  - name: "no_secrets_in_code"
+    description: "Never include secrets, tokens, or sensitive data in code"
+    rules:
+      - "Use environment variables for all secrets"
+      - "Use .env files (gitignored) for local development"
+      - "Never log sensitive information"
+      - "Use secure storage for test credentials"
+    trigger_phrases:
+      - "password ="
+      - "api_key ="
+      - "secret ="
+      - "token = \""
+    
+  - name: "secure_authentication"
+    description: "Handle authentication securely in tests"
+    rules:
+      - "Use secure authentication methods"
+      - "Never store passwords in plain text"
+      - "Use test accounts with minimal permissions"
+      - "Rotate test credentials regularly"
+    
+  - name: "input_validation"
+    description: "Validate and sanitize test inputs"
+    rules:
+      - "Sanitize user-provided test data"
+      - "Validate input formats before use"
+      - "Prevent injection attacks in test data"
+      - "Use parameterized inputs safely"
+    
+  - name: "no_debugging_in_production"
+    description: "Prevent debugging code from running in production"
+    rules:
+      - "Remove console.log statements with sensitive data"
+      - "Use proper logging levels"
+      - "Don't expose internal state in error messages"
+      - "Use test-specific error handling"
+
+# Soft constraints - security best practices
+soft_constraints:
+  
+  - name: "principle_of_least_privilege"
+    description: "Use minimal permissions for test accounts"
+    behavior: "recommend"
+    rules:
+      - "Test accounts should have only necessary permissions"
+      - "Use separate test accounts for different test scenarios"
+      - "Document required permissions for tests"
+    
+  - name: "secure_communication"
+    description: "Use secure communication protocols"
+    behavior: "recommend"
+    rules:
+      - "Use HTTPS for all test URLs"
+      - "Validate SSL certificates in tests"
+      - "Use secure WebSocket connections when needed"
+    
+  - name: "audit_logging"
+    description: "Log security-relevant test actions"
+    behavior: "recommend"
+    rules:
+      - "Log authentication attempts in tests"
+      - "Log sensitive operations"
+      - "Maintain audit trail for test runs"
+      - "Don't log sensitive data itself"
+
+# Response handling
+violation_responses:
+  
+  secret_in_code:
+    response: "I cannot include secrets in the code. Please use environment variables: `const apiKey = process.env.API_KEY`. Ensure your .env file is in .gitignore."
+    
+  insecure_auth:
+    response: "I've updated the authentication to use secure methods. The test now uses {secure_method} instead of {insecure_method}."
+    
+  unvalidated_input:
+    response: "I've added input validation: {validation}. This prevents potential security issues from malformed test data."
+
+monitoring:
+  log_violations: true
+  alert_threshold: 1  # Alert immediately on security issues
+  escalate_on:
+    - "secret_in_code"
+    - "insecure_auth"
+    - "code_injection_risk"

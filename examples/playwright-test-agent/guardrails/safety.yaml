@@ -1,0 +1,119 @@
+# Safety Guardrails Configuration
+# Core safety constraints for code generation
+
+name: safety
+description: "Core safety guardrails to prevent harmful or dangerous test code"
+priority: 100  # Highest priority - always applied
+
+# Hard constraints - never violate
+hard_constraints:
+  
+  # Credential Security
+  - name: "no_hardcoded_credentials"
+    description: "Never include hardcoded credentials, passwords, or API keys in test code"
+    rules:
+      - "Use environment variables for credentials (process.env.USERNAME)"
+      - "Use test fixtures or setup functions for authentication"
+      - "Never commit real credentials to version control"
+      - "Use test accounts with limited permissions"
+    trigger_phrases:
+      - "password ="
+      - "apiKey ="
+      - "token = \""
+      - "secret ="
+    
+  # Production Safety
+  - name: "no_production_modification"
+    description: "Never generate code that modifies production data or systems"
+    rules:
+      - "Tests should only run against test/staging environments"
+      - "Never generate destructive operations (DELETE, DROP, etc.) without safeguards"
+      - "Always use test data, never production data"
+      - "Include environment checks before destructive operations"
+    trigger_phrases:
+      - "delete all"
+      - "drop database"
+      - "production"
+      - "live data"
+    
+  # Code Injection Prevention
+  - name: "no_code_injection"
+    description: "Prevent code injection vulnerabilities in generated tests"
+    rules:
+      - "Sanitize user inputs in test data"
+      - "Use parameterized queries for database operations"
+      - "Avoid eval() or similar dangerous functions"
+      - "Validate test inputs before use"
+    
+  # File System Safety
+  - name: "no_dangerous_file_operations"
+    description: "Prevent dangerous file system operations"
+    rules:
+      - "Never delete files outside test directories"
+      - "Use temporary directories for test files"
+      - "Clean up test artifacts after tests complete"
+      - "Never access system directories or sensitive paths"
+    trigger_phrases:
+      - "rm -rf"
+      - "delete *"
+      - "/etc/"
+      - "/home/"
+    
+  # Network Safety
+  - name: "no_external_network_calls"
+    description: "Avoid making uncontrolled external network calls"
+    rules:
+      - "Mock external API calls in tests"
+      - "Use test servers or fixtures for network requests"
+      - "Never make real API calls to external services"
+      - "Document when external calls are necessary"
+    trigger_phrases:
+      - "fetch('http://"
+      - "axios.get('https://"
+      - "external API"
+
+# Soft constraints - prefer to follow
+soft_constraints:
+  
+  - name: "test_isolation"
+    description: "Ensure tests are isolated and don't affect each other"
+    behavior: "recommend"
+    rules:
+      - "Each test should be independent"
+      - "Use beforeEach/afterEach for cleanup"
+      - "Avoid shared state between tests"
+      - "Reset application state between tests"
+    
+  - name: "test_data_cleanup"
+    description: "Clean up test data after tests complete"
+    behavior: "recommend"
+    rules:
+      - "Delete test data in afterEach hooks"
+      - "Use unique identifiers for test data"
+      - "Document cleanup procedures"
+      - "Handle cleanup failures gracefully"
+
+# Response handling for guardrail violations
+violation_responses:
+  
+  hardcoded_credentials:
+    response: "I cannot include hardcoded credentials in test code. Please use environment variables or test fixtures instead. For example: `const username = process.env.TEST_USERNAME || 'testuser'`"
+    
+  production_modification:
+    response: "I cannot generate code that modifies production systems. Tests should only run against test or staging environments. Please ensure your test environment is properly configured."
+    
+  dangerous_operation:
+    response: "This operation could be dangerous. I've added safeguards: {safeguards}. Please review and ensure this only runs in test environments."
+    
+  external_call:
+    response: "Making real external API calls in tests can cause flakiness and costs. Consider mocking the API call instead. If a real call is necessary, document why and add proper error handling."
+
+# Logging and alerting
+monitoring:
+  log_violations: true
+  alert_threshold: 1  # Alert immediately on any safety violation
+  escalate_on:
+    - "hardcoded_credentials"
+    - "production_modification"
+    - "code_injection"
+    - "dangerous_file_operations"
