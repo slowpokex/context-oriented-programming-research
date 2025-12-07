@@ -1,63 +1,16 @@
-# Example COP Package: Customer Support Agent
-# This demonstrates the proposed package format for Context-Oriented Programming
+# Customer Support Agent - COP Package
+# Minimal manifest format - most settings auto-detected
 
 meta:
   name: "customer-support-agent"
   version: "1.2.0"
-  description: "Production-ready customer support context module with multi-persona support"
+  description: "Production-ready customer support agent with multi-persona support"
   author: "COP Examples"
   license: "MIT"
-  repository: "https://github.com/cop-lang/examples"
-  keywords:
-    - support
-    - customer-service
-    - conversational
-    - multi-persona
-
-# LLM Compatibility Matrix
-compatibility:
-  models:
-    - name: "gpt-4"
-      min_version: "gpt-4-0125-preview"
-      tested_versions:
-        - "gpt-4-0125-preview"
-        - "gpt-4-turbo-2024-04-09"
-      eval_scores:
-        quality: 0.94
-        safety: 0.99
-        latency_p95_ms: 1850
-        
-    - name: "claude-3"
-      min_version: "claude-3-sonnet-20240229"
-      tested_versions:
-        - "claude-3-opus-20240229"
-        - "claude-3-sonnet-20240229"
-      eval_scores:
-        quality: 0.92
-        safety: 0.98
-        latency_p95_ms: 2100
-        
-    - name: "gemini-pro"
-      min_version: "gemini-1.5-pro"
-      tested_versions:
-        - "gemini-1.5-pro-latest"
-      eval_scores:
-        quality: 0.89
-        safety: 0.97
-        latency_p95_ms: 1650
-
-  features_required:
-    - function_calling
-    - json_mode
-    - system_messages
-    
-  context_window:
-    minimum: 8192
-    recommended: 32768
+  keywords: [support, customer-service, conversational, multi-persona]
 
 # Core Context Definition
 context:
-  # System-level instructions
   system:
     source: "./prompts/system.md"
     variables:
@@ -71,109 +24,70 @@ context:
         required: true
         format: email
         default: "support@acme.com"
-        description: "Support email address for escalations"
+        description: "Support email for escalations"
       business_hours:
         type: string
-        required: false
         default: "9 AM - 5 PM EST, Monday-Friday"
       max_refund_amount:
         type: number
-        required: false
         default: 500
-        description: "Maximum refund amount agent can approve without escalation"
-        
-  # Persona definitions
+        description: "Max refund amount without escalation"
+
   personas:
     default: "professional"
     available:
       professional:
         source: "./personas/professional.yaml"
-        description: "Formal, efficient communication style"
+        description: "Formal, efficient communication"
       friendly:
         source: "./personas/friendly.yaml"
-        description: "Warm, conversational communication style"
+        description: "Warm, conversational style"
       technical:
         source: "./personas/technical.yaml"
-        description: "Detailed, technical explanations"
+        description: "Detailed technical explanations"
 
-  # Knowledge attachments
   knowledge:
     - name: "faq"
       source: "./knowledge/faq.md"
       type: static
-      description: "Frequently asked questions and answers"
-      
     - name: "products"
       source: "./knowledge/products.json"
       type: structured
-      schema: "./schemas/products.schema.json"
-      description: "Product catalog with pricing and features"
-      
     - name: "policies"
       source: "./knowledge/policies.md"
       type: static
-      description: "Return, refund, and support policies"
 
-  # Behavioral guardrails
   guardrails:
     - name: "safety"
       source: "./guardrails/safety.yaml"
       priority: 100
-      description: "Core safety and ethical constraints"
-      
     - name: "compliance"
       source: "./guardrails/compliance.yaml"
       priority: 90
-      description: "Regulatory compliance rules"
-      
     - name: "brand"
       source: "./guardrails/brand.yaml"
       priority: 80
-      description: "Brand voice and messaging guidelines"
 
-  # Tool/function definitions
   tools:
     - name: "lookup_order"
       source: "./tools/lookup_order.yaml"
-      description: "Look up customer order by ID or email"
-      
     - name: "create_ticket"
       source: "./tools/create_ticket.yaml"
-      description: "Create a support ticket in the system"
-      
     - name: "process_refund"
       source: "./tools/process_refund.yaml"
-      description: "Initiate a refund for an order"
       requires_approval: true
       max_amount: "${max_refund_amount}"
 
-# Dependencies on other COP modules
-dependencies:
-  "tone-analyzer": "^2.0.0"
-  "sentiment-core": "~1.5.0"
-  "response-formatter": ">=1.0.0"
-  "escalation-detector": "^1.2.0"
-
-# Development dependencies
-dev_dependencies:
-  "cop-test-framework": "^1.0.0"
-  "mock-llm": "^0.5.0"
-  "eval-metrics": "^2.1.0"
-
-# Build Configuration
+# Build Configuration - minimal, uses defaults
 build:
-  # Local LLM settings (LM Studio, Ollama, etc.)
-  local_llm:
-    endpoint: "http://127.0.0.1:1234/v1"    # LM Studio default
-    # endpoint: "http://127.0.0.1:11434/v1" # Ollama default
-    model: "local-model"
-    api_key: "lm-studio"
-    
+  # Linking enabled - RAG auto-enabled for synthetic generation
+  linking:
+    enabled: true
+
   # Synthetic data generation
   synthetic:
     enabled: true
-    samples: 20  # Number of training examples to generate
-    temperature: 0.8
+    samples: 20
     scenarios:
       - "order inquiry"
       - "refund request"
@@ -183,160 +97,20 @@ build:
       - "shipping delay"
       - "account issue"
       - "billing question"
-    
-  # Output settings
-  output:
-    format: "ftpack"
-    include_source: false
-    compression: "gzip"
 
-  # Build targets for different platforms
-  targets:
-    # OpenAI Custom GPT / Assistants API
-    openai:
-      format: assistant
-      optimize: true
-      include_knowledge: true
-      function_calling: true
-      
-    # Anthropic Claude
-    anthropic:
-      format: claude-config
-      optimize: true
-      xml_tags: true  # Claude prefers XML structured prompts
-      
-    # Azure OpenAI
-    azure:
-      format: promptflow
-      resource_group: "${AZURE_RESOURCE_GROUP}"
-      
-    # Standalone Docker deployment
-    standalone:
-      format: docker
-      base_image: "cop-runtime:1.0"
-      expose_port: 8080
-      health_check: "/health"
-      
-    # LangChain integration
-    langchain:
-      format: python-package
-      chain_type: "conversational"
-
-  preprocessing:
-    - minify_prompts: true
-    - resolve_imports: true
-    - validate_schemas: true
-    - optimize_token_usage: true
-    
-  postprocessing:
-    - generate_docs: true
-    - create_changelog: true
-
-# Evaluation Configuration
+# Test Suites
 evaluation:
-  framework: "cop-eval"
-  
   test_suites:
     - name: "unit"
       path: "./tests/unit/"
       type: deterministic
-      description: "Deterministic output format tests"
-      
     - name: "behavioral"
       path: "./tests/behavioral/"
       type: llm-judged
-      judge_model: "gpt-4"
-      description: "Quality and helpfulness evaluation"
-      
     - name: "safety"
       path: "./tests/safety/"
       type: adversarial
-      description: "Jailbreak and prompt injection tests"
-      
     - name: "regression"
       path: "./tests/regression/"
       type: comparison
       baseline_version: "1.1.0"
-      description: "Regression tests against previous version"
-
-  benchmarks:
-    - name: "response_quality"
-      metric: llm_judge_score
-      threshold: 0.85
-      weight: 0.3
-      
-    - name: "task_completion"
-      metric: task_success_rate
-      threshold: 0.90
-      weight: 0.25
-      
-    - name: "safety_score"
-      metric: guardrail_pass_rate
-      threshold: 0.99
-      weight: 0.25
-      
-    - name: "latency_p95"
-      metric: response_time_ms
-      threshold: 3000
-      weight: 0.1
-      
-    - name: "token_efficiency"
-      metric: avg_tokens_per_response
-      threshold: 500
-      weight: 0.1
-
-  regression:
-    baseline: "1.1.0"
-    tolerance: 0.05
-    alert_on_degradation: true
-
-# Runtime Configuration
-runtime:
-  # Model parameters
-  model_config:
-    temperature: 0.7
-    max_tokens: 2048
-    top_p: 0.95
-    frequency_penalty: 0.1
-    presence_penalty: 0.1
-    
-  # Retry and resilience
-  retry_policy:
-    max_retries: 3
-    backoff: exponential
-    initial_delay_ms: 1000
-    max_delay_ms: 10000
-    
-  # Fallback configuration
-  fallback:
-    enabled: true
-    trigger: "error_rate > 0.1 OR latency_p95 > 5000"
-    model: "gpt-3.5-turbo"
-    notify: true
-    
-  # Rate limiting
-  rate_limits:
-    requests_per_minute: 100
-    tokens_per_minute: 50000
-    
-  # Caching
-  cache:
-    enabled: true
-    ttl_seconds: 3600
-    similarity_threshold: 0.95
-
-# Observability
-observability:
-  logging:
-    level: info
-    include_prompts: false  # Privacy: don't log full prompts
-    include_responses: false
-    
-  metrics:
-    enabled: true
-    export_format: prometheus
-    
-  tracing:
-    enabled: true
-    sample_rate: 0.1
-    export_to: "otlp"

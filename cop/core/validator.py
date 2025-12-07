@@ -14,10 +14,11 @@ from typing import Any, Optional
 import yaml
 
 try:
-    from jsonschema import Draft7Validator, ValidationError
+    from jsonschema import Draft7Validator, ValidationError, SchemaError
 except ImportError:
     Draft7Validator = None
     ValidationError = Exception
+    SchemaError = Exception
 
 
 class Severity(Enum):
@@ -154,7 +155,11 @@ class SchemaRegistry:
             validator = Draft7Validator(schema)
             self._validators[schema_name] = validator
             return validator
-        except Exception:
+        except SchemaError:
+            # Invalid schema definition
+            return None
+        except (TypeError, ValueError):
+            # Schema data type issues
             return None
 
 

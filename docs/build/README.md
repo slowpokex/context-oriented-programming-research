@@ -6,6 +6,7 @@ This section documents the build process, artifacts, and compilation concepts in
 
 | Document | Purpose |
 |----------|---------|
+| [pipeline.md](./pipeline.md) | **🆕 Actual implementation documentation** — Mermaid diagrams, module reference, CLI usage |
 | [artifacts.md](./artifacts.md) | **Comprehensive analysis of COP build artifacts** — canonical reference for what "build artifacts" are in COP |
 | [compilation.md](./compilation.md) | **What "compilation" means in the COP paradigm** — stages, processes, transformations |
 | [concept.md](./concept.md) | Overview of the build concept — context assembly, evaluation, transformation |
@@ -15,10 +16,11 @@ This section documents the build process, artifacts, and compilation concepts in
 
 For a complete understanding of COP build systems:
 
-1. **[artifacts.md](./artifacts.md)** — Start here to understand what build artifacts are (Context Bundle, Fine-tune Dataset, Model Artifact, RAG Index) and which to use
-2. **[compilation.md](./compilation.md)** — Understand how "compilation" works in COP vs traditional software
-3. **[concept.md](./concept.md)** — Deep-dive into the philosophical and practical aspects of building
-4. **[internals.md](./internals.md)** — Technical implementation details for tool developers
+1. **[pipeline.md](./pipeline.md)** — **Start here** for the actual implemented pipeline with diagrams
+2. **[artifacts.md](./artifacts.md)** — Understand what build artifacts are (Context Bundle, Fine-tune Dataset, Model Artifact, RAG Index)
+3. **[concept.md](./concept.md)** — Philosophical and practical aspects of building
+4. **[compilation.md](./compilation.md)** — Understand how "compilation" works in COP vs traditional software
+5. **[internals.md](./internals.md)** — Aspirational technical design (TypeScript pseudo-code)
 
 ## Quick Overview
 

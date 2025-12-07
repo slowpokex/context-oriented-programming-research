@@ -20,6 +20,8 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from cop.pipeline.constants import DEFAULT_LLM_ENDPOINT
+
 # Initialize rich console
 console = Console()
 
@@ -91,16 +93,15 @@ def validate(path, verbose, strict, output_format):
 @main.command()
 @click.argument("path", type=click.Path(exists=True), default=".")
 @click.option("--output", "-o", type=click.Path(), default="dist", help="Output directory")
-@click.option("--target", "-t", multiple=True, 
-              type=click.Choice(["openai", "anthropic", "local", "all"]),
-              default=["all"], help="Target format(s)")
 @click.option("--skip-validation", is_flag=True, help="Skip validation step")
 @click.option("--skip-synthetic", is_flag=True, help="Skip synthetic data generation")
 @click.option("--lm-studio-url", default=None, 
               help="LM Studio API URL (overrides cop.yaml config)")
 @click.option("--dataset-only", is_flag=True, help="Output only JSONL dataset, skip packaging")
+@click.option("--link", "enable_linking", is_flag=True, 
+              help="Enable data linking (embeddings/RAG for better synthetic data)")
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed output")
-def build(path, output, target, skip_validation, skip_synthetic, lm_studio_url, dataset_only, verbose):
+def build(path, output, skip_validation, skip_synthetic, lm_studio_url, dataset_only, enable_linking, verbose):
     """Build a COP package into deployable artifacts.
     
     \b
@@ -108,26 +109,28 @@ def build(path, output, target, skip_validation, skip_synthetic, lm_studio_url, 
       1. Load and parse COP manifest
       2. Validate package structure
       3. Expand template variables
-      4. Generate synthetic data (optional)
-      5. Create training datasets
-      6. Package into .ftpack artifact
+      4. Data linking (optional: embeddings + RAG)
+      5. Generate synthetic data (optional)
+      6. Create training datasets
+      7. Package into .ftpack artifact
     
     \b
     Examples:
       cop build .
       cop build examples/customer-support-agent -o ./output
-      cop build . --target local --skip-synthetic
+      cop build . --skip-synthetic
+      cop build . --link --verbose  # Enable RAG-enhanced generation
     """
     from cop.commands.build import run_build
     
     result = run_build(
         package_path=Path(path),
         output_dir=Path(output),
-        targets=list(target),
         skip_validation=skip_validation,
         skip_synthetic=skip_synthetic,
         lm_studio_url=lm_studio_url,
         dataset_only=dataset_only,
+        enable_linking=enable_linking,
         verbose=verbose,
         console=console
     )
@@ -178,8 +181,8 @@ def init(name, template, output):
 
 @main.command()
 @click.option("--port", "-p", default=8080, help="Server port")
-@click.option("--lm-studio-url", default="http://localhost:1234/v1",
-              help="LM Studio API URL")
+@click.option("--lm-studio-url", default=DEFAULT_LLM_ENDPOINT,
+              help="LM Studio API URL (or set COP_LLM_ENDPOINT env var)")
 @click.option("--package", type=click.Path(exists=True), help="COP package to serve")
 def serve(port, lm_studio_url, package):
     """Start local development server with LM Studio integration.
@@ -193,7 +196,7 @@ def serve(port, lm_studio_url, package):
     \b
     Prerequisites:
       1. LM Studio must be running with a model loaded
-      2. LM Studio server must be started (localhost:1234)
+      2. LM Studio server must be started (or set COP_LLM_ENDPOINT)
     
     \b
     Examples:

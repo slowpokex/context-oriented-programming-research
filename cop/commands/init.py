@@ -387,7 +387,13 @@ def run_init(
         
         return True
         
-    except Exception as e:
-        console.print(f"[red]Error creating package:[/] {e}")
+    except PermissionError as e:
+        console.print(f"[red]Error creating package:[/] Permission denied: {e}")
+        return False
+    except FileExistsError as e:
+        console.print(f"[red]Error creating package:[/] File already exists: {e}")
+        return False
+    except (IOError, OSError) as e:
+        console.print(f"[red]Error creating package:[/] File system error: {e}")
         return False
 

@@ -36,7 +36,10 @@ def run_info(
     except FileNotFoundError as e:
         console.print(f"[red]Error:[/] {e}")
         return False
-    except Exception as e:
+    except (yaml.YAMLError, ValueError) as e:
+        console.print(f"[red]Error:[/] Invalid package format: {e}")
+        return False
+    except (IOError, OSError) as e:
         console.print(f"[red]Error loading package:[/] {e}")
         return False
     

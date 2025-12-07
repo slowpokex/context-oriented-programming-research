@@ -104,7 +104,13 @@ def run_extract(
     except tarfile.TarError as e:
         console.print(f"[red]Error:[/] Failed to read archive: {e}")
         return False
-    except Exception as e:
-        console.print(f"[red]Error:[/] {e}")
+    except FileNotFoundError as e:
+        console.print(f"[red]Error:[/] Archive not found: {e}")
+        return False
+    except PermissionError as e:
+        console.print(f"[red]Error:[/] Permission denied: {e}")
+        return False
+    except (IOError, OSError) as e:
+        console.print(f"[red]Error:[/] File system error: {e}")
         return False
 

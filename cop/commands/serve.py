@@ -5,13 +5,17 @@ COP Serve Command - Start local development server
 from pathlib import Path
 from typing import Optional
 
+import yaml
+from openai import APIError, APIConnectionError
 from rich.console import Console
 from rich.panel import Panel
+
+from cop.pipeline.constants import DEFAULT_LLM_ENDPOINT
 
 
 def run_serve(
     port: int = 8080,
-    lm_studio_url: str = "http://localhost:1234/v1",
+    lm_studio_url: str = DEFAULT_LLM_ENDPOINT,
     package_path: Optional[Path] = None,
     console: Console = None
 ):
@@ -54,9 +58,13 @@ def run_serve(
         console.print("[red]✗[/] OpenAI package not installed")
         console.print("  Run: pip install openai")
         return
-    except Exception as e:
+    except (APIError, APIConnectionError) as e:
         console.print(f"[red]✗[/] Could not connect to LM Studio: {e}")
         console.print("  Make sure LM Studio is running with the server enabled")
+        return
+    except (ConnectionError, TimeoutError, OSError) as e:
+        console.print(f"[red]✗[/] Network error connecting to LM Studio: {e}")
+        console.print("  Check your network connection and LM Studio server")
         return
     
     console.print()
@@ -67,8 +75,14 @@ def run_serve(
             from cop.core.package import COPPackage
             package = COPPackage.load(package_path)
             console.print(f"[green]✓[/] Loaded package: {package.name} v{package.version}")
-        except Exception as e:
-            console.print(f"[red]✗[/] Failed to load package: {e}")
+        except FileNotFoundError as e:
+            console.print(f"[red]✗[/] Package not found: {e}")
+            return
+        except (yaml.YAMLError, ValueError) as e:
+            console.print(f"[red]✗[/] Invalid package format: {e}")
+            return
+        except (IOError, OSError) as e:
+            console.print(f"[red]✗[/] Failed to read package: {e}")
             return
     
     console.print()
@@ -78,13 +92,13 @@ def run_serve(
     console.print(f"  [cyan]{lm_studio_url}[/]")
     console.print()
     console.print("Example usage:")
-    console.print('''
+    console.print(f'''
     from openai import OpenAI
-    client = OpenAI(base_url="http://localhost:1234/v1", api_key="x")
+    client = OpenAI(base_url="{lm_studio_url}", api_key="x")
     
     response = client.chat.completions.create(
         model="local-model",
-        messages=[{"role": "user", "content": "Hello!"}]
+        messages=[{{"role": "user", "content": "Hello!"}}]
     )
     print(response.choices[0].message.content)
     ''')

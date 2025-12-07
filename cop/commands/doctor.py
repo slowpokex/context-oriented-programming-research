@@ -5,9 +5,12 @@ COP Doctor Command - Check system dependencies and configuration
 import sys
 from pathlib import Path
 
+from openai import APIError, APIConnectionError
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+
+from cop.pipeline.constants import DEFAULT_LLM_ENDPOINT
 
 
 def run_doctor(console: Console = None) -> bool:
@@ -94,7 +97,7 @@ def run_doctor(console: Console = None) -> bool:
     # LM Studio connectivity
     try:
         from openai import OpenAI
-        client = OpenAI(base_url="http://localhost:1234/v1", api_key="not-needed")
+        client = OpenAI(base_url=DEFAULT_LLM_ENDPOINT, api_key="not-needed")
         models = client.models.list()
         if models.data:
             model_names = ", ".join(m.id for m in models.data[:2])
@@ -103,7 +106,9 @@ def run_doctor(console: Console = None) -> bool:
             table.add_row("LM Studio", "[yellow]○[/]", "Connected but no models loaded")
     except ImportError:
         table.add_row("LM Studio", "[yellow]○[/]", "openai package not installed")
-    except Exception:
+    except (APIError, APIConnectionError):
+        table.add_row("LM Studio", "[yellow]○[/]", "API error - check LM Studio server")
+    except (ConnectionError, TimeoutError, OSError):
         table.add_row("LM Studio", "[yellow]○[/]", "Not running or not accessible")
     
     console.print(table)

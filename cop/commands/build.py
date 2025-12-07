@@ -7,24 +7,27 @@ import json
 import tarfile
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import Optional
 
+import yaml
+from openai import APIError, APIConnectionError, RateLimitError
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 
 from cop.core.package import COPPackage
 from cop.core.validator import COPValidator
+from cop.pipeline.constants import DEFAULT_LLM_ENDPOINT, DEFAULT_LLM_MODEL, warn_dead_config
 
 
 def run_build(
     package_path: Path,
     output_dir: Path,
-    targets: List[str],
     skip_validation: bool = False,
     skip_synthetic: bool = False,
     lm_studio_url: str = None,  # None means use config or default
     dataset_only: bool = False,
+    enable_linking: bool = False,  # Enable data linking (embeddings/RAG)
     verbose: bool = False,
     console: Console = None
 ) -> bool:
@@ -33,7 +36,6 @@ def run_build(
     Args:
         package_path: Path to the COP package directory
         output_dir: Output directory for artifacts
-        targets: Target formats to generate
         skip_validation: Skip validation step
         skip_synthetic: Skip synthetic data generation
         lm_studio_url: LM Studio API URL (overrides config)
@@ -55,13 +57,13 @@ def run_build(
             manifest = yaml.safe_load(f) or {}
             build_config = manifest.get("build", {})
     
-    # Get LM Studio URL from: CLI arg > config > default
+    # Get LM Studio URL from: CLI arg > config > env var > default
     local_llm_config = build_config.get("local_llm", {})
     if lm_studio_url is None:
-        lm_studio_url = local_llm_config.get("endpoint", "http://localhost:1234/v1")
+        lm_studio_url = local_llm_config.get("endpoint", DEFAULT_LLM_ENDPOINT)
     
     # Get model name from config
-    local_model = local_llm_config.get("model", "local-model")
+    local_model = local_llm_config.get("model", DEFAULT_LLM_MODEL)
     
     console.print()
     console.print(Panel(
@@ -125,8 +127,19 @@ def run_build(
                 "name": package.name,
                 "version": package.version
             }
-        except Exception as e:
-            console.print(f"\n[red]✗ Failed to load package:[/] {e}")
+            
+            # Warn about unused config sections
+            if package.manifest:
+                warn_dead_config(package.manifest, verbose=verbose)
+                
+        except FileNotFoundError as e:
+            console.print(f"\n[red]✗ Package not found:[/] {e}")
+            return False
+        except (yaml.YAMLError, ValueError) as e:
+            console.print(f"\n[red]✗ Invalid package format:[/] {e}")
+            return False
+        except (IOError, OSError) as e:
+            console.print(f"\n[red]✗ Failed to read package:[/] {e}")
             return False
         
         progress.update(overall, advance=15)
@@ -157,6 +170,72 @@ def run_build(
         
         progress.update(overall, advance=15)
         
+        # Stage 3.5: Data Linking (optional)
+        linking_result = None
+        vector_index = None
+        
+        linking_config = build_config.get("linking", {})
+        linking_enabled = enable_linking or linking_config.get("enabled", False)
+        
+        if linking_enabled:
+            progress.update(overall, description="[cyan]Linking data (embeddings)...")
+            
+            try:
+                from cop.pipeline.linker import DataLinker, LinkingConfig
+                
+                # Create linking config from manifest
+                link_config = LinkingConfig.from_manifest(build_config)
+                
+                linker = DataLinker(
+                    package_path=package_path,
+                    config=link_config,
+                    console=console,
+                    verbose=verbose
+                )
+                
+                if verbose:
+                    console.print(f"  [dim]Embedding model: {link_config.embedding_model}[/]")
+                
+                # Run linking pipeline
+                linking_result = linker.link()
+                vector_index = linking_result.index
+                
+                build_state["stages"]["linking"] = {
+                    "status": "success",
+                    "total_files": linking_result.total_files,
+                    "total_chunks": linking_result.total_chunks,
+                    "embedding_dimensions": linking_result.embeddings.dimensions if linking_result.embeddings else 0,
+                }
+                
+                if verbose:
+                    console.print(f"  [dim]Linked {linking_result.total_files} files → {linking_result.total_chunks} chunks[/]")
+                
+            except ImportError as e:
+                build_state["stages"]["linking"] = {
+                    "status": "skipped",
+                    "reason": f"Missing dependency: {e}"
+                }
+                if verbose:
+                    console.print(f"  Linking skipped: {e}", style="yellow", markup=False)
+            except (APIError, APIConnectionError) as e:
+                build_state["stages"]["linking"] = {
+                    "status": "failed",
+                    "reason": f"Embedding API error: {e}"
+                }
+                if verbose:
+                    console.print(f"  Linking failed (API): {e}", style="yellow", markup=False)
+                return False
+            except (IOError, OSError) as e:
+                build_state["stages"]["linking"] = {
+                    "status": "failed",
+                    "reason": f"File error: {e}"
+                }
+                if verbose:
+                    console.print(f"  Linking failed (IO): {e}", style="yellow", markup=False)
+                return False
+        else:
+            build_state["stages"]["linking"] = {"status": "disabled"}
+        
         # Stage 4: Synthetic generation (optional)
         if not skip_synthetic:
             progress.update(overall, description="[cyan]Generating synthetic data...")
@@ -166,24 +245,42 @@ def run_build(
             num_samples = synthetic_config.get("samples", 10)
             temperature = synthetic_config.get("temperature", 0.8)
             scenarios = synthetic_config.get("scenarios", [])
+            rag_top_k = synthetic_config.get("rag_top_k", 5)
+            
+            # RAG is automatically enabled when linking produces a vector index
+            # Can be explicitly disabled with use_rag: false in config
+            use_rag_config = synthetic_config.get("use_rag", None)
+            if use_rag_config is None:
+                # Auto-enable RAG when vector_index exists
+                use_rag = vector_index is not None
+            else:
+                # Explicit config overrides auto-detection
+                use_rag = use_rag_config and vector_index is not None
             
             synthetic_data = []
             try:
                 from cop.pipeline.synthetic import SyntheticDataPipeline
                 
-                # Create pipeline
+                # Create pipeline with RAG (auto-enabled when linking is used)
                 pipeline = SyntheticDataPipeline(
                     endpoint=lm_studio_url,
                     model=local_model,
                     temperature=temperature,
                     num_samples=num_samples,
                     console=console,
-                    verbose=verbose
+                    verbose=verbose,
+                    vector_index=vector_index,
+                    use_rag=use_rag,
+                    rag_top_k=rag_top_k
                 )
                 
                 if verbose:
                     console.print(f"  [dim]Endpoint: {lm_studio_url}[/]")
                     console.print(f"  [dim]Samples: {num_samples}[/]")
+                    if use_rag:
+                        console.print(f"  [dim]RAG: enabled (top_k={rag_top_k})[/]")
+                    else:
+                        console.print(f"  [dim]RAG: disabled[/]")
                 
                 # Generate synthetic data
                 synthetic_data = pipeline.generate(
@@ -206,12 +303,18 @@ def run_build(
                     "reason": f"Missing dependency: {e}"
                 }
                 build_state["warnings"].append(f"Synthetic generation skipped: {e}")
-            except Exception as e:
+            except (APIError, APIConnectionError, RateLimitError) as e:
                 build_state["stages"]["synthetic"] = {
                     "status": "skipped",
-                    "reason": f"Error: {e}"
+                    "reason": f"LLM API error: {e}"
                 }
-                build_state["warnings"].append(f"Synthetic generation failed: {e}")
+                build_state["warnings"].append(f"Synthetic generation failed (API): {e}")
+            except (json.JSONDecodeError, ValueError) as e:
+                build_state["stages"]["synthetic"] = {
+                    "status": "skipped",
+                    "reason": f"Data error: {e}"
+                }
+                build_state["warnings"].append(f"Synthetic generation failed (data): {e}")
             
             progress.update(overall, advance=15)
         else:
@@ -298,6 +401,48 @@ def run_build(
         context_path = output_dir / "context.bundle.json"
         with open(context_path, "w", encoding="utf-8") as f:
             json.dump(context_bundle, f, indent=2)
+        
+        # Save linking artifacts if available
+        if linking_result is not None:
+            progress.update(overall, description="[cyan]Saving embeddings index...")
+            
+            try:
+                from cop.pipeline.linker import DataLinker
+                
+                linker = DataLinker(
+                    package_path=package_path,
+                    console=console,
+                    verbose=verbose
+                )
+                
+                # Save index and chunks to output directory
+                index_dir = output_dir / "embeddings"
+                linker.save_artifacts(linking_result, index_dir)
+                
+                build_state["stages"]["embeddings"] = {
+                    "status": "success",
+                    "index_dir": str(index_dir),
+                    "chunks": linking_result.total_chunks,
+                    "dimensions": linking_result.embeddings.dimensions if linking_result.embeddings else 0
+                }
+                
+                if verbose:
+                    console.print(f"  [dim]Saved embeddings to {index_dir}[/]")
+                    
+            except (IOError, OSError) as e:
+                build_state["stages"]["embeddings"] = {
+                    "status": "failed",
+                    "reason": f"Failed to write embeddings: {e}"
+                }
+                if verbose:
+                    console.print(f"  Failed to save embeddings: {e}", style="yellow", markup=False)
+            except (json.JSONDecodeError, TypeError) as e:
+                build_state["stages"]["embeddings"] = {
+                    "status": "failed",
+                    "reason": f"Serialization error: {e}"
+                }
+                if verbose:
+                    console.print(f"  Failed to serialize embeddings: {e}", style="yellow", markup=False)
         
         progress.update(overall, advance=15)
         

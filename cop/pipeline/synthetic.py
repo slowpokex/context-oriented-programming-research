@@ -9,6 +9,7 @@ import json
 import hashlib
 import re
 import random
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +28,9 @@ except ImportError:
     END = None
 
 from openai import OpenAI, APIError, APIConnectionError, RateLimitError, AuthenticationError
+
+from .logger import PipelineLogger, APICallStats
+from .constants import DEFAULT_LLM_ENDPOINT, DEFAULT_LLM_MODEL, DEFAULT_EMBEDDING_MODEL, DEFAULT_API_KEY
 
 
 class PipelineState(TypedDict):
@@ -90,9 +94,9 @@ AGENT_TYPE_DESCRIPTIONS = {
 class SyntheticDataPipeline:
     """LangGraph-based pipeline for generating synthetic training data."""
     
-    endpoint: str = "http://127.0.0.1:1234/v1"
-    model: str = "local-model"
-    api_key: str = "not-needed"
+    endpoint: str = DEFAULT_LLM_ENDPOINT
+    model: str = DEFAULT_LLM_MODEL
+    api_key: str = DEFAULT_API_KEY
     temperature: float = 0.8
     max_tokens: int = 2048  # Increased for code generation
     num_samples: int = 10
@@ -102,12 +106,19 @@ class SyntheticDataPipeline:
     
     # Embedding-based classification
     use_embeddings: bool = True
-    embedding_model: str = "text-embedding-nomic-embed-text-v1.5"
+    embedding_model: str = DEFAULT_EMBEDDING_MODEL
+    
+    # RAG integration
+    vector_index: Optional[Any] = None  # VectorIndex for RAG retrieval
+    rag_top_k: int = 5                   # Number of chunks to retrieve
+    use_rag: bool = False                # Enable RAG-enhanced generation
     
     _client: Optional[OpenAI] = field(default=None, init=False, repr=False)
     _agent_type: Optional[str] = field(default=None, init=False, repr=False)
     _embedding_cache: Dict[str, List[float]] = field(default_factory=dict, init=False, repr=False)
     _ref_embeddings: Dict[str, List[float]] = field(default_factory=dict, init=False, repr=False)
+    _logger: Optional[PipelineLogger] = field(default=None, init=False, repr=False)
+    _call_count: int = field(default=0, init=False, repr=False)
     
     def __post_init__(self):
         self.console = self.console or Console()
@@ -115,6 +126,25 @@ class SyntheticDataPipeline:
             base_url=self.endpoint,
             api_key=self.api_key
         )
+        self._logger = PipelineLogger(
+            console=self.console,
+            verbose=self.verbose,
+            collect_stats=True
+        )
+        # Enable RAG if vector_index is provided
+        if self.vector_index is not None:
+            self.use_rag = True
+        
+        # Log initialization
+        if self.verbose:
+            self._logger.section("Pipeline Initialized")
+            with self._logger.indent():
+                self._logger.info(f"Endpoint: {self.endpoint}")
+                self._logger.info(f"Model: {self.model}")
+                self._logger.info(f"Temperature: {self.temperature}")
+                self._logger.info(f"Max Tokens: {self.max_tokens}")
+                self._logger.info(f"Samples: {self.num_samples}")
+                self._logger.info(f"RAG Enabled: {self.use_rag}")
     
     def generate(
         self,
@@ -134,14 +164,26 @@ class SyntheticDataPipeline:
         if not scenarios:
             scenarios = self._generate_default_scenarios(tools)
         
+        if self.verbose:
+            self._logger.section("Starting Synthetic Data Generation")
+            with self._logger.indent():
+                self._logger.info(f"Scenarios: {len(scenarios)}")
+                self._logger.info(f"Target samples: {self.num_samples}")
+        
         if LANGGRAPH_AVAILABLE:
-            return self._run_langgraph_pipeline(
+            result = self._run_langgraph_pipeline(
                 system_prompt, personas, guardrails, tools, scenarios, output_path
             )
         else:
-            return self._run_simple_pipeline(
+            result = self._run_simple_pipeline(
                 system_prompt, personas, guardrails, tools, scenarios, output_path
             )
+        
+        # Print final stats
+        if self.verbose:
+            self._logger.print_stats_summary()
+        
+        return result
     
     def _generate_default_scenarios(self, tools: List[Dict]) -> List[str]:
         """Generate default scenarios based on available tools."""
@@ -293,7 +335,7 @@ class SyntheticDataPipeline:
                     
                 except (APIError, APIConnectionError, RateLimitError) as e:
                     if self.verbose:
-                        self.console.print(f"[yellow]Warning:[/] Failed scenario {i+1}: {e}")
+                        self.console.print(f"Warning: Failed scenario {i+1}: {e}", style="yellow")
         
         # Write output
         if output_path:
@@ -304,7 +346,11 @@ class SyntheticDataPipeline:
     # ========== LANGGRAPH NODES ==========
     
     def _node_expand_scenarios(self, state: PipelineState) -> PipelineState:
-        """Node 1: Expand base scenarios with more context and variations."""
+        """Node 1: Expand base scenarios with more context and variations.
+        
+        Creates enough variations to meet the target num_samples by generating
+        multiple emotion/complexity combinations per base scenario.
+        """
         expanded = []
         
         # Customer emotions/tones to mix in
@@ -313,17 +359,37 @@ class SyntheticDataPipeline:
         # Complexity levels
         complexities = ["simple", "moderate", "complex"]
         
+        # Calculate how many variations per scenario to reach num_samples
+        num_scenarios = len(state["scenarios"])
+        target_samples = state["config"].get("num_samples", 10)
+        
+        # Generate at least 1 variation per scenario, more to reach target
+        variations_per_scenario = max(1, (target_samples + num_scenarios - 1) // num_scenarios)
+        
         for scenario in state["scenarios"]:
-            # Create variations with different emotions and complexity
-            emotion = random.choice(emotions)
-            complexity = random.choice(complexities)
+            # Track used combinations to avoid duplicates within same scenario
+            used_combinations = set()
             
-            expanded.append({
-                "base_scenario": scenario,
-                "emotion": emotion,
-                "complexity": complexity,
-                "context": f"{scenario} (customer is {emotion}, {complexity} issue)"
-            })
+            for _ in range(variations_per_scenario):
+                # Keep trying until we get a unique combination (or give up)
+                for attempt in range(10):
+                    emotion = random.choice(emotions)
+                    complexity = random.choice(complexities)
+                    combo = (emotion, complexity)
+                    
+                    if combo not in used_combinations or attempt == 9:
+                        used_combinations.add(combo)
+                        expanded.append({
+                            "base_scenario": scenario,
+                            "emotion": emotion,
+                            "complexity": complexity,
+                            "context": f"{scenario} (customer is {emotion}, {complexity} issue)"
+                        })
+                        break
+        
+        # Shuffle to mix scenarios, then trim to exact target
+        random.shuffle(expanded)
+        expanded = expanded[:target_samples]
         
         state["expanded_scenarios"] = expanded
         state["stats"]["scenarios_expanded"] = len(expanded)
@@ -573,21 +639,51 @@ Write ONLY the user's message, as if you are the user. Be natural and conversati
 Do not include any labels or prefixes like "User:" - just write the message directly."""
 
         try:
+            self._call_count += 1
+            
             # Step 1: Generate user message
+            user_system_content = "You are simulating a customer. Write realistic customer messages. Output ONLY the message, no thinking or explanations."
+            input_chars = len(user_system_content) + len(user_prompt)
+            
+            start_time = self._logger.log_api_call_start(
+                endpoint=self.endpoint,
+                model=self.model,
+                operation=f"chat/user-gen #{self._call_count}",
+                input_chars=input_chars
+            )
+            
             user_response = self._client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are simulating a customer. Write realistic customer messages. Output ONLY the message, no thinking or explanations."},
+                    {"role": "system", "content": user_system_content},
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=self.temperature,
                 max_tokens=200
             )
+            
+            # Extract token usage if available
+            usage = user_response.usage
+            request_tokens = usage.prompt_tokens if usage else input_chars // 4
+            response_tokens = usage.completion_tokens if usage else 0
+            total_tokens = usage.total_tokens if usage else request_tokens + response_tokens
+            
+            self._logger.log_api_call_end(
+                start_time=start_time,
+                endpoint=self.endpoint,
+                model=self.model,
+                operation=f"chat/user-gen #{self._call_count}",
+                request_tokens=request_tokens,
+                response_tokens=response_tokens,
+                total_tokens=total_tokens,
+                success=True
+            )
+            
             user_message_raw = user_response.choices[0].message.content.strip()
             user_message = self._strip_thinking_tags(user_message_raw)
             
             if self.verbose and user_message != user_message_raw:
-                self.console.print(f"  [dim]Stripped thinking tags from user message[/]")
+                self._logger.info("Stripped thinking tags from user message")
             
             # Fallback if stripping left empty message
             if not user_message and user_message_raw:
@@ -604,25 +700,72 @@ Do not include any labels or prefixes like "User:" - just write the message dire
                     else:
                         user_message = f"Hi, I need help with {scenario.lower()}."
             
-            # Step 2: Generate assistant response
+            # Step 2: Generate assistant response (with optional RAG context)
+            # Build system prompt with RAG context if available
+            effective_system_prompt = system_prompt
+            if self.use_rag:
+                rag_start = time.time()
+                rag_context = self._retrieve_rag_context(user_message)
+                rag_duration = (time.time() - rag_start) * 1000
+                if rag_context:
+                    effective_system_prompt = f"""{system_prompt}
+
+---
+RELEVANT CONTEXT (use this to inform your response):
+{rag_context}
+---"""
+                    self._logger.log_rag_retrieval(
+                        query_preview=user_message,
+                        results_count=rag_context.count("[Context"),
+                        top_score=0.0,  # Score logged in retrieval method
+                        duration_ms=rag_duration
+                    )
+            
+            self._call_count += 1
+            assistant_input_chars = len(effective_system_prompt) + len(user_message)
+            
+            start_time = self._logger.log_api_call_start(
+                endpoint=self.endpoint,
+                model=self.model,
+                operation=f"chat/assistant-gen #{self._call_count}",
+                input_chars=assistant_input_chars
+            )
+            
             assistant_response = self._client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": effective_system_prompt},
                     {"role": "user", "content": user_message}
                 ],
                 temperature=0.7,
                 max_tokens=self.max_tokens
             )
+            
+            # Extract token usage
+            usage = assistant_response.usage
+            request_tokens = usage.prompt_tokens if usage else assistant_input_chars // 4
+            response_tokens = usage.completion_tokens if usage else 0
+            total_tokens = usage.total_tokens if usage else request_tokens + response_tokens
+            
+            self._logger.log_api_call_end(
+                start_time=start_time,
+                endpoint=self.endpoint,
+                model=self.model,
+                operation=f"chat/assistant-gen #{self._call_count}",
+                request_tokens=request_tokens,
+                response_tokens=response_tokens,
+                total_tokens=total_tokens,
+                success=True
+            )
+            
             assistant_message_raw = assistant_response.choices[0].message.content.strip()
             assistant_message = self._strip_thinking_tags(assistant_message_raw)
             
             if self.verbose and assistant_message != assistant_message_raw:
-                self.console.print(f"  [dim]Stripped thinking tags from assistant message[/]")
+                self._logger.info("Stripped thinking tags from assistant message")
             
             if not assistant_message:
-                if self.verbose:
-                    self.console.print(f"  [yellow]Empty response after stripping, skipping[/]")
+                self._logger.warning("Empty response after stripping, skipping")
                 return None
             
             return {
@@ -634,21 +777,65 @@ Do not include any labels or prefixes like "User:" - just write the message dire
                 "generated_at": datetime.utcnow().isoformat()
             }
             
-        except AuthenticationError:
-            if self.verbose:
-                self.console.print("[red]Error:[/] Invalid API key for LM Studio")
+        except AuthenticationError as e:
+            self._logger.log_connectivity_error(
+                endpoint=self.endpoint,
+                error_type="AuthenticationError",
+                message="Invalid API key for LM Studio"
+            )
+            self._logger.log_api_call_end(
+                start_time=start_time,
+                endpoint=self.endpoint,
+                model=self.model,
+                operation="chat",
+                success=False,
+                error="Authentication failed"
+            )
             return None
-        except APIConnectionError:
-            if self.verbose:
-                self.console.print("[red]Error:[/] Cannot connect to LM Studio - is it running?")
+        except APIConnectionError as e:
+            self._logger.log_connectivity_error(
+                endpoint=self.endpoint,
+                error_type="APIConnectionError",
+                message=f"Cannot connect to LM Studio - is it running? ({str(e)[:100]})"
+            )
+            self._logger.log_api_call_end(
+                start_time=start_time,
+                endpoint=self.endpoint,
+                model=self.model,
+                operation="chat",
+                success=False,
+                error="Connection failed"
+            )
             return None
-        except RateLimitError:
-            if self.verbose:
-                self.console.print("[yellow]Warning:[/] Rate limited, skipping")
+        except RateLimitError as e:
+            self._logger.log_connectivity_error(
+                endpoint=self.endpoint,
+                error_type="RateLimitError",
+                message="Rate limited by API"
+            )
+            self._logger.log_api_call_end(
+                start_time=start_time,
+                endpoint=self.endpoint,
+                model=self.model,
+                operation="chat",
+                success=False,
+                error="Rate limited"
+            )
             return None
         except APIError as e:
-            if self.verbose:
-                self.console.print(f"[red]API error:[/] {e.message}")
+            self._logger.log_connectivity_error(
+                endpoint=self.endpoint,
+                error_type="APIError",
+                message=str(e.message) if hasattr(e, 'message') else str(e)
+            )
+            self._logger.log_api_call_end(
+                start_time=start_time,
+                endpoint=self.endpoint,
+                model=self.model,
+                operation="chat",
+                success=False,
+                error=str(e)
+            )
             return None
     
     def _extend_to_multi_turn(
@@ -719,7 +906,7 @@ Write ONLY the customer's follow-up message."""
             
         except (APIError, APIConnectionError, RateLimitError) as e:
             if self.verbose:
-                self.console.print(f"[yellow]Multi-turn error:[/] {e}")
+                self.console.print(f"Multi-turn error: {e}", style="yellow")
             return None
     
     def _get_embedding(self, text: str) -> Optional[List[float]]:
@@ -762,6 +949,62 @@ Write ONLY the customer's follow-up message."""
         norm_a = math.sqrt(sum(x * x for x in a))
         norm_b = math.sqrt(sum(x * x for x in b))
         return dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
+    
+    def _retrieve_rag_context(self, query: str, top_k: Optional[int] = None) -> str:
+        """
+        Retrieve relevant context using RAG from the vector index.
+        
+        Args:
+            query: The query text (scenario or user message)
+            top_k: Number of chunks to retrieve (default: self.rag_top_k)
+            
+        Returns:
+            Formatted context string from retrieved chunks
+        """
+        if not self.use_rag or self.vector_index is None:
+            return ""
+        
+        top_k = top_k or self.rag_top_k
+        
+        try:
+            # Get query embedding
+            query_embedding = self._get_embedding(query)
+            if query_embedding is None:
+                return ""
+            
+            # Search the index
+            results = self.vector_index.search(
+                query_embedding=query_embedding,
+                top_k=top_k,
+                min_score=0.3  # Minimum similarity threshold
+            )
+            
+            if not results:
+                return ""
+            
+            # Format retrieved context
+            context_parts = []
+            for i, result in enumerate(results, 1):
+                if result.chunk is not None:
+                    source = result.chunk.source_file
+                    content = result.chunk.content[:500]  # Truncate long chunks
+                    context_parts.append(
+                        f"[Context {i} from {source} (relevance: {result.score:.2f})]:\n{content}"
+                    )
+            
+            if context_parts:
+                return "\n\n---\n\n".join(context_parts)
+            
+            return ""
+            
+        except (ValueError, KeyError, TypeError) as e:
+            if self.verbose:
+                self.console.print(f"RAG retrieval error (data): {e}", style="yellow")
+            return ""
+        except (APIError, APIConnectionError) as e:
+            if self.verbose:
+                self.console.print(f"RAG retrieval error (API): {e}", style="yellow")
+            return ""
     
     def _detect_agent_type_embeddings(self, system_prompt: str) -> Optional[str]:
         """Classify agent type using semantic embeddings."""
@@ -857,8 +1100,8 @@ Write ONLY the customer's follow-up message."""
             user = conv.get("user", "")
             assistant = conv.get("assistant", "")
         
-        # Detect agent type
-        agent_type = self._detect_agent_type(system_prompt)
+        # Use cached agent type, or detect if not yet cached
+        agent_type = self._agent_type or self._detect_agent_type(system_prompt)
         
         # Route to type-specific scoring
         if agent_type == "code_generation":
