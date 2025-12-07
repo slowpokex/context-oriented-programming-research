@@ -1,3 +1,13 @@
-# COP Schema Validator Dependencies
+# COP CLI Dependencies
+# Core
+click>=8.1.0
 pyyaml>=6.0
 jsonschema>=4.17.0
+rich>=13.0.0
+
+# LLM Integration
+openai>=1.0.0
+diskcache>=5.6.0
+
+# Pipeline
+langgraph>=0.2.0

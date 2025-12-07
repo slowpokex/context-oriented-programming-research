@@ -14,23 +14,17 @@ This directory contains JSON Schema definitions for validating Context-Oriented 
 
 ## Validation Tool
 
-Use the `validate_cop.py` script to validate COP packages:
+Use the `cop` CLI to validate COP packages:
 
 ```bash
-# Install dependencies
-pip install pyyaml jsonschema
+# Install the CLI
+pip install -e .
 
 # Validate a single package
-python3 validate_cop.py examples/customer-support-agent
-
-# Validate all packages in examples/
-python3 validate_cop.py --all
-
-# Validate a single file against a specific schema
-python3 validate_cop.py --file examples/customer-support-agent/personas/professional.yaml --schema persona
+cop validate examples/customer-support-agent
 
 # Verbose output with more details
-python3 validate_cop.py examples/customer-support-agent --verbose
+cop validate examples/customer-support-agent --verbose
 ```
 
 ## Schema Overview
@@ -175,7 +169,6 @@ test_cases:
 |------|---------|
 | 0 | All validations passed |
 | 1 | Validation errors found |
-| 2 | Invalid arguments or missing parameters |
 
 ## Error Types
 
@@ -205,22 +198,23 @@ The schemas use JSON Schema draft-07 and allow additional properties for extensi
 
 ```yaml
 # GitHub Actions example
+- name: Install COP CLI
+  run: pip install -e .
+
 - name: Validate COP Package
-  run: |
-    pip install pyyaml jsonschema
-    python3 validate_cop.py my-package/
+  run: cop validate my-package/
 ```
 
 ### Programmatic Usage
 
 ```python
-from validate_cop import COPValidator
+from cop.core.validator import COPValidator
+from pathlib import Path
 
 validator = COPValidator()
 result = validator.validate_package(Path("my-package/"))
 
 if result.has_errors:
     for issue in result.issues:
-        print(issue.format())
-    sys.exit(1)
+        print(f"{issue.severity}: {issue.message}")
 ```

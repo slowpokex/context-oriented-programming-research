@@ -64,11 +64,13 @@ context:
       company_name:
         type: string
         required: true
+        default: "Acme Corp"
         description: "Your company's display name"
       support_email:
         type: string
         required: true
         format: email
+        default: "support@acme.com"
         description: "Support email address for escalations"
       business_hours:
         type: string
@@ -160,6 +162,35 @@ dev_dependencies:
 
 # Build Configuration
 build:
+  # Local LLM settings (LM Studio, Ollama, etc.)
+  local_llm:
+    endpoint: "http://127.0.0.1:1234/v1"    # LM Studio default
+    # endpoint: "http://127.0.0.1:11434/v1" # Ollama default
+    model: "local-model"
+    api_key: "lm-studio"
+    
+  # Synthetic data generation
+  synthetic:
+    enabled: true
+    samples: 20  # Number of training examples to generate
+    temperature: 0.8
+    scenarios:
+      - "order inquiry"
+      - "refund request"
+      - "product question"
+      - "complaint"
+      - "general support"
+      - "shipping delay"
+      - "account issue"
+      - "billing question"
+    
+  # Output settings
+  output:
+    format: "ftpack"
+    include_source: false
+    compression: "gzip"
+
+  # Build targets for different platforms
   targets:
     # OpenAI Custom GPT / Assistants API
     openai:

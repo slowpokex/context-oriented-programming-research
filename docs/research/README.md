@@ -11,6 +11,7 @@ This directory contains the core research findings and analysis for Context-Orie
 | [deep-analysis.md](./deep-analysis.md) | Philosophical and technical deep-dive | 25-35 min |
 | [tool-comparison.md](./tool-comparison.md) | Analysis of LangChain, PromptFlow, Semantic Kernel, etc. | 15-20 min |
 | [opinion.md](./opinion.md) | Perspective on COP as a paradigm shift | 10-15 min |
+| [local-llm-pipeline.md](./local-llm-pipeline.md) | Local LLM pipeline with LangGraph + LM Studio | 30-40 min |
 
 ## Quick Start
 
@@ -19,6 +20,8 @@ This directory contains the core research findings and analysis for Context-Orie
 **Want comprehensive details?** Read [main-research.md](./main-research.md).
 
 **Interested in the philosophy?** Check [deep-analysis.md](./deep-analysis.md).
+
+**Building a local pipeline?** See [local-llm-pipeline.md](./local-llm-pipeline.md) for LangGraph + LM Studio architecture.
 
 ## Key Concepts
 
