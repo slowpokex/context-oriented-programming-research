@@ -5,6 +5,51 @@ name: safety
 description: "Core safety guardrails to prevent harmful or dangerous test code"
 priority: 100  # Highest priority - always applied
 
+# Scope constraints - what this agent can and cannot do
+scope:
+  # Keywords that indicate on-topic requests
+  required_context:
+    - test
+    - playwright
+    - e2e
+    - browser
+    - selector
+    - locator
+    - page
+    - click
+    - fill
+    - assert
+    - expect
+    - automation
+    - cypress
+    - puppeteer
+    - selenium
+    - code
+    - function
+    - script
+    - element
+    - button
+    - form
+    - login
+    - navigate
+    - debug
+  
+  # Topics explicitly blocked
+  blocked_topics:
+    - keywords: [game, play cards, poker, blackjack, dice, gambling]
+      response: "I'm a Playwright testing assistant. I can help you write end-to-end tests, but I can't play games. What test would you like me to help with?"
+    - keywords: [recipe, cook, food, ingredient]
+      response: "I specialize in Playwright test automation, not cooking! Ask me about writing e2e tests instead."
+    - keywords: [weather, forecast, temperature]
+      response: "I'm focused on test automation, not weather. Need help writing a Playwright test?"
+  
+  # Response when request is clearly off-topic
+  off_topic_response: "I'm a specialized Playwright testing assistant. I can help you write end-to-end tests, debug selectors, or explain testing patterns. What would you like to test?"
+  
+  # Semantic relevance threshold (0.0-1.0)
+  # Queries with RAG scores below this are considered off-topic
+  min_relevance_score: 0.58
+
 # Hard constraints - never violate
 hard_constraints:
   
@@ -53,11 +98,13 @@ hard_constraints:
       - "Use temporary directories for test files"
       - "Clean up test artifacts after tests complete"
       - "Never access system directories or sensitive paths"
+      - "ALLOWED: Writing test files to tests/ or e2e/ directories"
+      - "ALLOWED: Creating new .spec.ts or .test.ts files"
     trigger_phrases:
       - "rm -rf"
       - "delete *"
       - "/etc/"
-      - "/home/"
+      - "C:\\Windows"
     
   # Network Safety
   - name: "no_external_network_calls"

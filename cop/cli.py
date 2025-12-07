@@ -6,6 +6,7 @@ Usage:
     cop --help
     cop validate <path>
     cop build <path>
+    cop run <path>
     cop init <name>
     cop serve
     cop info <path>
@@ -212,6 +213,83 @@ def serve(port, lm_studio_url, package):
         package_path=Path(package) if package else None,
         console=console
     )
+
+
+@main.command()
+@click.argument("path", type=click.Path(exists=True))
+@click.option("--persona", "-p", default=None, help="Persona to use")
+@click.option("--provider", default=None, 
+              type=click.Choice(["local", "lmstudio", "ollama", "openai", "openrouter", "groq", "together"]),
+              help="LLM provider (auto-detected from model if not set)")
+@click.option("--endpoint", "-e", default=None,
+              help="Custom API endpoint URL (overrides provider)")
+@click.option("--model", "-m", default=None, 
+              help="Model name (e.g., gpt-4, openai/gpt-4o, local-model)")
+@click.option("--api-key", "-k", default=None, envvar="COP_API_KEY",
+              help="API key (or set provider-specific env var)")
+@click.option("--no-rag", is_flag=True, help="Disable RAG context retrieval")
+@click.option("--no-tools", is_flag=True, help="Disable tool calling (for models that don't support it)")
+@click.option("--temperature", "-t", default=0.7, help="Response temperature")
+@click.option("--max-history", default=20, help="Max conversation turns to keep (prevents context overflow)")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed debug output")
+def run(path, persona, provider, endpoint, model, api_key, no_rag, no_tools, temperature, max_history, verbose):
+    """Run an interactive chat session with a COP agent.
+    
+    \b
+    This command starts an interactive REPL where you can chat
+    with your COP agent using local or cloud LLMs.
+    
+    \b
+    Supported Providers:
+      local      - Local LM Studio (default)
+      lmstudio   - LM Studio at localhost:1234
+      ollama     - Ollama at localhost:11434
+      openai     - OpenAI API (requires OPENAI_API_KEY)
+      openrouter - OpenRouter (requires OPENROUTER_API_KEY)
+      groq       - Groq (requires GROQ_API_KEY)
+      together   - Together AI (requires TOGETHER_API_KEY)
+    
+    \b
+    Examples:
+      # Local LM Studio (model names with slashes are fine)
+      cop run examples/playwright-test-agent
+      cop run . --model openai/gpt-oss-20b
+      
+      # OpenAI API
+      cop run . --provider openai --model gpt-4o
+      
+      # OpenRouter
+      cop run . --provider openrouter --model openai/gpt-4o
+      
+      # Custom endpoint
+      cop run . --endpoint http://my-server:8080/v1 --model my-model
+    
+    \b
+    In-session commands:
+      /quit        - End session
+      /clear       - Clear chat history
+      /persona X   - Switch persona
+      /rag on|off  - Toggle RAG
+      /help        - Show help
+    """
+    from cop.commands.run import run_interactive
+    
+    result = run_interactive(
+        package_path=Path(path),
+        persona=persona,
+        provider=provider,
+        endpoint=endpoint,
+        model=model,
+        api_key=api_key,
+        use_rag=not no_rag,
+        use_tools=not no_tools,
+        temperature=temperature,
+        max_history=max_history,
+        verbose=verbose,
+        console=console
+    )
+    
+    sys.exit(0 if result else 1)
 
 
 @main.command()

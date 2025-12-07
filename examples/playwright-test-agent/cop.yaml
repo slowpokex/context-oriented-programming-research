@@ -83,6 +83,11 @@ context:
 
 # Build Configuration - minimal, uses defaults
 build:
+  # Local LLM configuration for synthetic data generation
+  local_llm:
+    endpoint: "http://localhost:1234/v1"
+    model: "qwen/qwen3-4b-thinking-2507"  # Update to your loaded model
+  
   # Linking enabled - RAG auto-enabled for synthetic generation
   linking:
     enabled: true
@@ -102,6 +107,40 @@ build:
       - "test responsive design"
       - "generate API mocking test"
       - "write test for error handling"
+
+# MCP Integration - External tools for the agent
+mcp:
+  servers:
+    # Filesystem access (read/write files)
+    - name: filesystem
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "./"]
+      enabled: true
+  
+  # Instructions added to system prompt when MCP tools are available
+  system_instructions: |
+    You have access to filesystem tools that allow you to:
+    - Read files from the project
+    - Write new files (tests, code, etc.)
+    - List directories
+    - Create directories
+    
+    When asked to create or write tests, USE the filesystem tools to actually 
+    write the files. Don't just show the code - save it to the appropriate location.
+#     
+#     # Browser automation
+#     - name: browser
+#       command: npx
+#       args: ["-y", "@anthropic/mcp-browser"]
+#       enabled: false
+#     
+#     # Custom MCP server
+#     - name: my-server
+#       command: python
+#       args: ["-m", "my_mcp_server"]
+#       env:
+#         API_KEY: "${MY_API_KEY}"
+#       enabled: false
 
 # Test Suites
 evaluation:
