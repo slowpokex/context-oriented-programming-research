@@ -67,6 +67,7 @@ context:
       project_name:
         type: string
         required: true
+        default: "My Web App"
         description: "Name of the project being tested"
       project_type:
         type: string
@@ -89,6 +90,7 @@ context:
       base_url:
         type: string
         required: false
+        default: "http://localhost:3000"
         format: url
         description: "Base URL of the application under test"
       test_directory:
@@ -180,6 +182,29 @@ dev_dependencies:
 
 # Build Configuration
 build:
+  # Local LLM settings (LM Studio, Ollama, etc.)
+  local_llm:
+    endpoint: "http://127.0.0.1:1234/v1"
+    model: "local-model"
+    api_key: "lm-studio"
+    
+  # Synthetic data generation
+  synthetic:
+    enabled: true
+    samples: 15
+    temperature: 0.7
+    scenarios:
+      - "generate test for login page"
+      - "write e2e test for navigation menu"
+      - "create test for form validation"
+      - "test user authentication flow"
+      - "generate test for shopping cart"
+      - "write test for search functionality"
+      - "create accessibility test"
+      - "test responsive design"
+      - "generate API mocking test"
+      - "write test for error handling"
+
   targets:
     # OpenAI Custom GPT / Assistants API
     openai:
